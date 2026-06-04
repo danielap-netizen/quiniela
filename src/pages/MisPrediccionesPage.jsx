@@ -40,15 +40,15 @@ function MatchCard({ partido, prediccion, onSave, disabled }) {
   return (
     <div className="match-card">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-xs font-mono uppercase tracking-wider" style={{color:'rgba(244,167,185,0.5)'}}>Grupo {partido.grupo}</span>
-        <span className="text-xs font-mono" style={{color:'rgba(240,240,238,0.35)'}}>{formatFecha(partido.fecha)}</span>
+        <span className="text-sm font-mono uppercase tracking-wider" style={{color:'#F4A7B9'}}>Grupo {partido.grupo}</span>
+        <span className="text-sm font-mono" style={{color:'rgba(240,240,238,0.78)'}}>{formatFecha(partido.fecha)}</span>
       </div>
 
       <div className="flex items-center justify-between gap-2 mb-4">
         <div className="flex-1 text-right">
           <div className="text-3xl mb-0.5">{partido.localFlag}</div>
           <div className="font-bold text-lg text-white leading-tight" style={{fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.01em'}}>{partido.local}</div>
-          <div className="text-xs text-white/35 mt-0.5">Local</div>
+          <div className="text-sm text-white/60 mt-0.5">Local</div>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {opts.map(o => (
@@ -62,11 +62,11 @@ function MatchCard({ partido, prediccion, onSave, disabled }) {
         <div className="flex-1 text-left">
           <div className="text-3xl mb-0.5">{partido.visitanteFlag}</div>
           <div className="font-bold text-lg text-white leading-tight" style={{fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.01em'}}>{partido.visitante}</div>
-          <div className="text-xs text-white/35 mt-0.5">Visita</div>
+          <div className="text-sm text-white/60 mt-0.5">Visita</div>
         </div>
       </div>
 
-      {sel && <div className="text-center text-sm mb-3" style={{color:'rgba(244,167,185,0.7)'}}>
+      {sel && <div className="text-center text-base mb-3 font-medium" style={{color:'#F8C5D3'}}>
         {sel === 'L' ? `Gana ${partido.local}` : sel === 'V' ? `Gana ${partido.visitante}` : 'Empate'}
       </div>}
 
@@ -83,7 +83,7 @@ function MatchCard({ partido, prediccion, onSave, disabled }) {
         </button>
       )}
       {disabled && (
-        <div className="text-center text-xs font-mono py-1" style={{color:'rgba(244,167,185,0.3)'}}>
+        <div className="text-center text-sm font-mono py-1" style={{color:'rgba(244,167,185,0.55)'}}>
           {prediccion ? `✓ ${sel === 'L' ? partido.local : sel === 'V' ? partido.visitante : 'Empate'}` : '— sin predicción —'}
         </div>
       )}
@@ -132,7 +132,7 @@ export default function MisPrediccionesPage() {
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-6 animate-fade-in">
         <h1 className="font-bold text-4xl text-white mb-1" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>Mis predicciones</h1>
-        <p className="text-white/40 text-sm">
+        <p className="text-white/55 text-sm">
           {isOpen
             ? `Cierre: ${format(FECHA_CIERRE, "d 'de' MMMM, HH:mm 'CDT'", {locale:es})} · Puedes cambiar hasta entonces`
             : 'Quiniela cerrada · resultados bloqueados'}
@@ -141,19 +141,30 @@ export default function MisPrediccionesPage() {
 
       {!isOpen && (
         <div className="mb-6 p-4 rounded-2xl" style={{background:'rgba(244,167,185,0.06)',border:'1px solid rgba(244,167,185,0.15)'}}>
-          <p className="text-sm" style={{color:'rgba(244,167,185,0.7)'}}>🔒 La quiniela cerró. Tus predicciones están guardadas y visibles en la tabla pública.</p>
+          <p className="text-sm" style={{color:'#F8C5D3'}}>🔒 La quiniela cerró. Tus predicciones están guardadas y visibles en la tabla pública.</p>
         </div>
       )}
 
       <div className="glass-card rounded-2xl p-4 mb-6">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-semibold text-white/60">Progreso</span>
+          <span className="text-sm font-semibold text-white/70">Progreso</span>
           <span className="text-sm font-mono" style={{color:'#F4A7B9'}}>{completadas}/{PARTIDOS.length}</span>
         </div>
         <div className="h-2 rounded-full" style={{background:'rgba(244,167,185,0.1)'}}>
           <div className="h-full rounded-full transition-all duration-700" style={{width:`${pct}%`,background:'#F4A7B9'}}/>
         </div>
-        {completadas === PARTIDOS.length && <p className="text-xs text-right mt-1.5" style={{color:'rgba(244,167,185,0.5)'}}>✓ ¡Completaste todos los partidos!</p>}
+        {completadas === PARTIDOS.length ? (
+          <p className="text-sm text-right mt-1.5" style={{color:'#F8C5D3'}}>✓ ¡Completaste los {PARTIDOS.length} partidos!</p>
+        ) : (
+          <p className="text-sm mt-2 font-semibold" style={{color:'#F4A7B9'}}>
+            Te faltan {PARTIDOS.length - completadas} {PARTIDOS.length - completadas === 1 ? 'partido' : 'partidos'} por predecir
+          </p>
+        )}
+        {isOpen && completadas < PARTIDOS.length && (
+          <p className="text-xs mt-1" style={{color:'rgba(255,190,130,0.9)'}}>
+            ⚠️ Los partidos sin predicción no suman puntos. Complétalos antes del cierre.
+          </p>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-1.5 mb-6">
@@ -169,8 +180,8 @@ export default function MisPrediccionesPage() {
                 fontSize:'0.95rem',
                 letterSpacing:'0.04em',
                 background: active ? '#F4A7B9' : 'rgba(244,167,185,0.08)',
-                color: active ? '#111F18' : done === total ? 'rgba(244,167,185,0.7)' : 'rgba(240,240,238,0.4)',
-                border: active ? 'none' : done === total ? '1px solid rgba(244,167,185,0.25)' : '1px solid rgba(244,167,185,0.08)',
+                color: active ? '#111F18' : done === total ? '#F8C5D3' : 'rgba(240,240,238,0.6)',
+                border: active ? 'none' : done === total ? '1px solid rgba(244,167,185,0.35)' : '1px solid rgba(244,167,185,0.15)',
               }}>
               {g} {done === total ? '✓' : `${done}/${total}`}
             </button>
@@ -184,7 +195,7 @@ export default function MisPrediccionesPage() {
         ))}
       </div>
 
-      <p className="text-center text-xs font-mono mt-8" style={{color:'rgba(244,167,185,0.2)'}}>
+      <p className="text-center text-xs font-mono mt-8" style={{color:'rgba(244,167,185,0.35)'}}>
         {isOpen ? '💡 Tus predicciones se guardan automáticamente por partido.' : '🏆 Los resultados ya son públicos.'}
       </p>
     </div>
