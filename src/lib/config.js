@@ -3,7 +3,7 @@
 // ============================================================
 
 // Deadline: 1 hora antes del partido inaugural (11 Jun 3pm ET = 2pm CDT)
-export const FECHA_CIERRE = new Date('2026-06-11T14:00:00-05:00')
+export const FECHA_CIERRE = new Date('2026-06-11T18:00:00Z')
 
 export const NOMBRE_TORNEO = 'Mundial 2026 · Familia Pereyra Fernández'
 export const NOMBRE_CORTO = 'Quiniela Mundial 2026'
