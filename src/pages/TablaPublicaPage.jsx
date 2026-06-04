@@ -8,152 +8,22 @@ import { es } from 'date-fns/locale'
 
 function Countdown({ fechaCierre }) {
   const [diff, setDiff] = useState(fechaCierre - new Date())
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDiff(fechaCierre - new Date())
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [fechaCierre])
-
+  useEffect(() => { const t = setInterval(() => setDiff(fechaCierre - new Date()), 1000); return () => clearInterval(t) }, [fechaCierre])
   if (diff <= 0) return null
-
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-  const secs = Math.floor((diff % (1000 * 60)) / 1000)
-
+  const d = Math.floor(diff/(1000*60*60*24))
+  const h = Math.floor((diff%(1000*60*60*24))/(1000*60*60))
+  const m = Math.floor((diff%(1000*60*60))/(1000*60))
+  const s = Math.floor((diff%(1000*60))/1000)
   return (
-    <div className="flex items-center justify-center gap-4 my-6">
-      {[
-        { value: days, label: 'días' },
-        { value: hours, label: 'horas' },
-        { value: mins, label: 'min' },
-        { value: secs, label: 'seg' },
-      ].map(({ value, label }) => (
-        <div key={label} className="text-center">
-          <div className="glass-card-dark rounded-xl px-4 py-3 min-w-[64px]">
-            <span className="font-display font-extrabold text-3xl text-pitch-200 tabular-nums">
-              {String(value).padStart(2, '0')}
-            </span>
+    <div className="flex items-center justify-center gap-3 my-5">
+      {[{v:d,l:'días'},{v:h,l:'horas'},{v:m,l:'min'},{v:s,l:'seg'}].map(({v,l}) => (
+        <div key={l} className="text-center">
+          <div className="glass-card rounded-xl px-4 py-3 min-w-[62px]">
+            <span className="font-bold text-4xl text-white tabular-nums" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{String(v).padStart(2,'0')}</span>
           </div>
-          <span className="text-pitch-600 text-xs font-mono mt-1 block">{label}</span>
+          <span className="text-xs font-mono mt-1 block" style={{color:'rgba(244,167,185,0.5)'}}>{l}</span>
         </div>
       ))}
-    </div>
-  )
-}
-
-function ClosedView({ participantes }) {
-  const [selected, setSelected] = useState(null)
-
-  // Build matrix: participantes × partidos
-  const phases = [...new Set(PARTIDOS.map(p => p.fase))]
-
-  return (
-    <div className="animate-fade-in">
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-8">
-        {participantes.map((p, i) => {
-          const completadas = PARTIDOS.filter(m => p.predicciones[m.id]).length
-          return (
-            <button
-              key={p.alias}
-              onClick={() => setSelected(selected === i ? null : i)}
-              className={`glass-card rounded-2xl p-4 text-left transition-all duration-200 hover:border-pitch-400/30
-                ${selected === i ? 'border-pitch-400/50 bg-pitch-800/20' : ''}
-              `}
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-full bg-pitch-800 flex items-center justify-center font-display font-bold text-sm text-pitch-300">
-                  {i + 1}
-                </div>
-                <span className="font-display font-semibold text-sm text-pitch-200">{p.alias}</span>
-              </div>
-              <div className="text-xs font-mono text-pitch-500">
-                {completadas}/{PARTIDOS.length} predicciones
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Detail table */}
-      <div className="glass-card-dark rounded-3xl overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-pitch-800/50">
-                <th className="text-left px-5 py-4 font-mono text-xs text-pitch-500 uppercase tracking-wider sticky left-0 bg-pitch-950/80 backdrop-blur-sm">
-                  Partido
-                </th>
-                {participantes.map((p, i) => (
-                  <th
-                    key={p.alias}
-                    className={`px-4 py-4 font-display text-xs text-pitch-400 whitespace-nowrap
-                      ${selected === i ? 'text-pitch-200 bg-pitch-800/20' : ''}
-                    `}
-                  >
-                    {p.alias}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {phases.map(fase => (
-                <>
-                  <tr key={`phase-${fase}`} className="bg-pitch-950/30">
-                    <td
-                      colSpan={participantes.length + 1}
-                      className="px-5 py-2 text-xs font-mono text-pitch-600 uppercase tracking-widest"
-                    >
-                      {fase}
-                    </td>
-                  </tr>
-                  {PARTIDOS.filter(m => m.fase === fase).map((match, ri) => (
-                    <tr
-                      key={match.id}
-                      className={`border-b border-pitch-900/50 transition-colors hover:bg-pitch-900/20
-                        ${ri % 2 === 0 ? '' : 'bg-pitch-950/20'}
-                      `}
-                    >
-                      <td className="px-5 py-4 sticky left-0 bg-pitch-950/90 backdrop-blur-sm">
-                        <div className="flex items-center gap-2">
-                          <span className="text-lg">{match.localFlag}</span>
-                          <span className="text-pitch-500">vs</span>
-                          <span className="text-lg">{match.visitanteFlag}</span>
-                        </div>
-                        <div className="text-xs text-pitch-600 font-mono mt-0.5">
-                          {match.local} vs {match.visitante}
-                        </div>
-                      </td>
-                      {participantes.map((p, i) => {
-                        const pred = p.predicciones[match.id]
-                        return (
-                          <td
-                            key={p.alias}
-                            className={`px-4 py-4 text-center
-                              ${selected === i ? 'bg-pitch-800/20' : ''}
-                            `}
-                          >
-                            {pred ? (
-                              <span className="font-mono font-bold text-pitch-200 tabular-nums">
-                                {pred.goles_local}:{pred.goles_visitante}
-                              </span>
-                            ) : (
-                              <span className="text-pitch-800 font-mono">–</span>
-                            )}
-                          </td>
-                        )
-                      })}
-                    </tr>
-                  ))}
-                </>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   )
 }
@@ -161,179 +31,178 @@ function ClosedView({ participantes }) {
 export default function TablaPublicaPage() {
   const { user } = useAuth()
   const [participantes, setParticipantes] = useState([])
-  const [totalRegistrados, setTotalRegistrados] = useState(0)
+  const [resultados, setResultados] = useState({})
+  const [totalReg, setTotalReg] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
   const isOpen = new Date() < FECHA_CIERRE
 
   useEffect(() => {
-    const loadData = async () => {
-      // Always get count of registered users
-      const { count } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-      setTotalRegistrados(count || 0)
+    const load = async () => {
+      const { count } = await supabase.from('profiles').select('*',{count:'exact',head:true})
+      setTotalReg(count || 0)
+
+      const { data: resData } = await supabase.from('resultados').select('partido_id, resultado')
+      const resMap = {}; (resData || []).forEach(r => { resMap[r.partido_id] = r.resultado }); setResultados(resMap)
 
       if (!isOpen) {
-        // Load all predictions and profiles for public view
-        const [{ data: predsData, error: predsError }, { data: profilesData, error: profilesError }] =
-          await Promise.all([
-            supabase.from('predicciones').select('user_id, partido_id, goles_local, goles_visitante'),
-            supabase.from('profiles').select('id, nombre'),
-          ])
-
-        if (predsError || profilesError) {
-          setError('Error al cargar las predicciones: ' + (predsError?.message || profilesError?.message))
-          setLoading(false)
-          return
-        }
-
-        // Build a name lookup map
-        const nombrePorId = {}
-        profilesData.forEach(p => { nombrePorId[p.id] = p.nombre })
-
-        // Group predictions by user
+        const [{ data: predsData }, { data: profilesData }] = await Promise.all([
+          supabase.from('predicciones').select('user_id, partido_id, resultado'),
+          supabase.from('profiles').select('id, nombre')
+        ])
+        const nombreMap = {}; (profilesData || []).forEach(p => { nombreMap[p.id] = p.nombre })
         const byUser = {}
-        predsData.forEach(p => {
+        ;(predsData || []).forEach(p => {
           if (!byUser[p.user_id]) byUser[p.user_id] = {}
-          byUser[p.user_id][p.partido_id] = p
+          byUser[p.user_id][p.partido_id] = p.resultado
         })
-
-        // Build list with real names, sorted by completeness desc
-        const lista = Object.entries(byUser).map(([userId, preds]) => ({
-          alias: nombrePorId[userId] || 'Participante',
-          predicciones: preds,
-        }))
-        lista.sort((a, b) =>
-          Object.keys(b.predicciones).length - Object.keys(a.predicciones).length
-        )
-
+        const lista = Object.entries(byUser).map(([uid, preds]) => {
+          let pts = 0
+          Object.entries(preds).forEach(([pid, pred]) => { if (resMap[pid] && resMap[pid] === pred) pts++ })
+          return { nombre: nombreMap[uid] || 'Participante', preds, pts }
+        })
+        lista.sort((a,b) => b.pts - a.pts)
         setParticipantes(lista)
       }
       setLoading(false)
     }
-
-    loadData()
+    load()
   }, [isOpen])
 
+  const recentPts = participantes.filter(p => p.pts > 0).slice(0,3)
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      {/* Hero header */}
-      <div className="text-center mb-10 animate-fade-in">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass-card text-pitch-400 text-xs font-mono uppercase tracking-widest mb-5">
-          <span className="w-2 h-2 rounded-full bg-pitch-400 animate-pulse-slow inline-block" />
+    <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="text-center mb-8 animate-fade-in">
+        <div className="text-5xl mb-4">🌍</div>
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 text-xs font-mono uppercase tracking-widest" style={{background:'rgba(244,167,185,0.08)',border:'1px solid rgba(244,167,185,0.15)',color:'rgba(244,167,185,0.7)'}}>
+          <span className="w-1.5 h-1.5 rounded-full inline-block animate-pulse" style={{background:'#F4A7B9'}}/>
           {NOMBRE_TORNEO}
         </div>
-        <h1 className="font-display font-extrabold text-4xl sm:text-5xl text-pitch-50 mb-3 leading-none">
-          {isOpen ? 'Quiniela abierta' : 'Tabla de predicciones'}
+        <h1 className="font-bold leading-none text-white mb-3" style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'clamp(2.5rem,6vw,4rem)'}}>
+          {isOpen ? 'Quiniela abierta' : 'Tabla de puntos'}
         </h1>
-        <p className="text-pitch-500 max-w-lg mx-auto text-sm">
+        <p className="text-white/40 max-w-lg mx-auto">
           {isOpen
-            ? `Registra tus predicciones antes del cierre. Actualmente ${totalRegistrados} participante${totalRegistrados !== 1 ? 's' : ''} registrado${totalRegistrados !== 1 ? 's' : ''}.`
-            : `La quiniela ha cerrado. Aquí están todas las predicciones.`}
+            ? `¡Ya hay ${totalReg} ${totalReg === 1 ? 'participante' : 'participantes'}! Registra tus picks antes del cierre.`
+            : 'La quiniela cerró. Así van los puntos.'}
         </p>
       </div>
 
-      {/* Open state */}
       {isOpen && (
-        <div className="max-w-2xl mx-auto">
-          {/* Countdown */}
-          <div className="glass-card rounded-3xl p-8 text-center mb-8 animate-slide-up" style={{ animationFillMode: 'both' }}>
-            <p className="text-pitch-500 text-xs font-mono uppercase tracking-widest mb-2">
-              Cierra el
+        <div className="max-w-xl mx-auto">
+          <div className="glass-card rounded-3xl p-8 text-center mb-6 animate-slide-up">
+            <p className="text-xs font-mono uppercase tracking-widest mb-1" style={{color:'rgba(244,167,185,0.5)'}}>Predicciones cierran el</p>
+            <p className="font-bold text-2xl text-white mb-2" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>
+              {format(FECHA_CIERRE,"EEEE d 'de' MMMM, HH:mm 'CDT'",{locale:es})}
             </p>
-            <p className="font-display font-bold text-xl text-pitch-200 mb-4">
-              {format(FECHA_CIERRE, "EEEE d 'de' MMMM, HH:mm", { locale: es })}
+            <Countdown fechaCierre={FECHA_CIERRE}/>
+            <p className="text-xs text-white/25 mt-2">1 hora antes del partido inaugural México 🇲🇽 vs Sudáfrica 🇿🇦</p>
+          </div>
+
+          <div className="glass-card rounded-3xl p-7 mb-6" style={{border:'1px solid rgba(244,167,185,0.12)'}}>
+            <h2 className="font-bold text-2xl text-white mb-2" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>¿De qué va esto?</h2>
+            <p className="text-white/55 leading-relaxed text-sm mb-4">
+              Por tercer Mundial consecutivo, la familia Pereyra Fernández los invita a compartir cada partido juntos — aunque sea desde lejos. 🎉
             </p>
-            <Countdown fechaCierre={FECHA_CIERRE} />
-            <p className="text-pitch-600 text-xs font-mono mt-2">
-              Después del cierre, las predicciones se publicarán automáticamente
+            <p className="text-white/55 leading-relaxed text-sm mb-4">
+              Simple: predice si gana el local, hay empate o gana la visita en cada partido de la fase de grupos. <span style={{color:'rgba(244,167,185,0.8)'}}>1 punto por cada acierto.</span>
+            </p>
+            <p className="text-white/55 leading-relaxed text-sm">
+              Y si nos picamos como pasó en el Mundial pasado... seguimos con octavos, cuartos, semis y final. Por ahora, que gane el mejor quinielas. 🏆
             </p>
           </div>
 
-          {/* CTA */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            {user ? (
-              <Link to="/mis-predicciones" className="btn-primary text-center block">
-                ✏️ Editar mis predicciones
-              </Link>
-            ) : (
-              <>
-                <Link to="/registro" className="btn-gold text-center block">
-                  🎯 Participar ahora
-                </Link>
-                <Link to="/login" className="btn-secondary text-center block">
-                  Ya tengo cuenta →
-                </Link>
-              </>
-            )}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {user
+              ? <Link to="/mis-predicciones" className="btn-primary text-center block py-3.5">✏️ Mis picks</Link>
+              : <Link to="/registro" className="btn-primary text-center block py-3.5">⚽ Participar</Link>
+            }
+            <Link to="/partidos" className="btn-secondary text-center block py-3.5">📅 Ver partidos</Link>
           </div>
 
-          {/* Stats */}
-          <div className="mt-8 grid grid-cols-2 gap-4">
-            <div className="glass-card rounded-2xl p-5 text-center">
-              <div className="font-display font-extrabold text-4xl text-pitch-300 mb-1">
-                {totalRegistrados}
+          <div className="grid grid-cols-2 gap-3">
+            {[{n:'Participantes',v:totalReg},{n:'Partidos',v:72}].map(({n,v}) => (
+              <div key={n} className="glass-card rounded-2xl p-5 text-center">
+                <div className="font-bold text-5xl text-white mb-1" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{v}</div>
+                <div className="text-xs text-white/35 uppercase tracking-wider font-mono">{n}</div>
               </div>
-              <div className="text-pitch-600 text-xs font-mono uppercase tracking-wider">
-                Participantes
-              </div>
-            </div>
-            <div className="glass-card rounded-2xl p-5 text-center">
-              <div className="font-display font-extrabold text-4xl text-pitch-300 mb-1">
-                {PARTIDOS.length}
-              </div>
-              <div className="text-pitch-600 text-xs font-mono uppercase tracking-wider">
-                Partidos
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* Closed state */}
       {!isOpen && (
         <>
           {loading ? (
-            <div className="text-center py-16">
-              <div className="w-10 h-10 border-2 border-pitch-500/30 border-t-pitch-400 rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-pitch-500 font-mono text-sm">Cargando tabla...</p>
-            </div>
-          ) : error ? (
-            <div className="p-5 rounded-xl bg-red-900/20 border border-red-500/30 text-red-400 text-sm text-center">
-              {error}
-            </div>
-          ) : participantes.length === 0 ? (
-            <div className="text-center py-16">
-              <span className="text-5xl block mb-4">📭</span>
-              <p className="text-pitch-500">No hay predicciones registradas.</p>
+            <div className="text-center py-12">
+              <div className="w-10 h-10 rounded-full animate-spin mx-auto" style={{border:'2px solid rgba(244,167,185,0.2)',borderTopColor:'#F4A7B9'}}/>
             </div>
           ) : (
             <>
-              {/* Closed banner */}
-              <div className="max-w-2xl mx-auto mb-8">
-                <div className="glass-card rounded-2xl p-5 flex items-center gap-4">
-                  <span className="text-3xl">🔒</span>
-                  <div>
-                    <p className="font-display font-semibold text-pitch-200">Quiniela cerrada</p>
-                    <p className="text-pitch-500 text-xs font-mono">
-                      Cerró el {format(FECHA_CIERRE, "d 'de' MMMM, HH:mm", { locale: es })} ·{' '}
-                      {participantes.length} participantes
-                    </p>
+              {recentPts.length > 0 && (
+                <div className="max-w-xl mx-auto mb-8">
+                  <div className="glass-card rounded-2xl p-5" style={{border:'1px solid rgba(244,167,185,0.15)'}}>
+                    <p className="text-xs font-mono uppercase tracking-widest mb-3" style={{color:'rgba(244,167,185,0.5)'}}>🔥 Lideran la quiniela</p>
+                    {recentPts.map((p,i) => (
+                      <div key={p.nombre} className="flex items-center justify-between py-2" style={{borderTop: i>0 ? '1px solid rgba(244,167,185,0.06)' : 'none'}}>
+                        <span className="font-semibold text-white">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {p.nombre}</span>
+                        <span className="font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts} pts</span>
+                      </div>
+                    ))}
                   </div>
-                </div>
-              </div>
-
-              {user && (
-                <div className="max-w-2xl mx-auto mb-6">
-                  <Link to="/mis-predicciones" className="btn-secondary text-sm block text-center">
-                    Ver mis predicciones registradas
-                  </Link>
                 </div>
               )}
 
-              <ClosedView participantes={participantes} />
+              {participantes.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-5xl mb-3">📭</div>
+                  <p className="text-white/40">No hay predicciones registradas.</p>
+                </div>
+              ) : (
+                <div className="glass-card-dark rounded-3xl overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr style={{borderBottom:'1px solid rgba(244,167,185,0.08)'}}>
+                          <th className="text-left px-5 py-4 text-xs font-mono uppercase tracking-wider sticky left-0" style={{color:'rgba(244,167,185,0.4)',background:'rgba(15,32,22,0.9)'}}>Participante</th>
+                          <th className="px-4 py-4 text-xs font-mono uppercase tracking-wider" style={{color:'rgba(244,167,185,0.4)'}}>Pts</th>
+                          {PARTIDOS.slice(0,20).map(m => (
+                            <th key={m.id} className="px-2 py-4 text-xs font-mono" style={{color:'rgba(244,167,185,0.3)',minWidth:'52px'}}>
+                              {m.localFlag}{m.visitanteFlag}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {participantes.map((p,i) => (
+                          <tr key={p.nombre} style={{borderBottom:'1px solid rgba(244,167,185,0.05)',background: i%2===0 ? 'transparent' : 'rgba(244,167,185,0.02)'}}>
+                            <td className="px-5 py-3 sticky left-0 font-semibold text-white" style={{background: i%2===0 ? 'rgba(15,32,22,0.85)' : 'rgba(17,28,21,0.85)'}}>
+                              {i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : `${i+1}. `}{p.nombre}
+                            </td>
+                            <td className="px-4 py-3 text-center font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts}</td>
+                            {PARTIDOS.slice(0,20).map(m => {
+                              const pred = p.preds[m.id]
+                              const res = resultados[m.id]
+                              const correct = pred && res && pred === res
+                              return (
+                                <td key={m.id} className="px-2 py-3 text-center font-mono text-xs">
+                                  <span style={{
+                                    color: correct ? '#F4A7B9' : pred ? 'rgba(240,240,238,0.4)' : 'rgba(244,167,185,0.15)',
+                                    fontFamily:"'Barlow Condensed',sans-serif",
+                                    fontSize:'0.95rem',
+                                    fontWeight: correct ? '700' : '400'
+                                  }}>{pred || '–'}</span>
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {PARTIDOS.length > 20 && <p className="text-center text-xs py-3" style={{color:'rgba(244,167,185,0.25)'}}>Mostrando primeros 20 partidos · Todos los puntos están calculados</p>}
+                </div>
+              )}
             </>
           )}
         </>

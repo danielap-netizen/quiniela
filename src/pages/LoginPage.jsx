@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { NOMBRE_TORNEO } from '../lib/config'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -12,103 +11,42 @@ export default function LoginPage() {
   const navigate = useNavigate()
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      await signIn(email, password)
-      navigate('/mis-predicciones')
-    } catch (err) {
-      setError(err.message === 'Invalid login credentials'
-        ? 'Email o contraseña incorrectos.'
-        : err.message)
-    } finally {
-      setLoading(false)
-    }
+    e.preventDefault(); setError(''); setLoading(true)
+    try { await signIn(email, password); navigate('/mis-predicciones') }
+    catch (err) { setError(err.message.includes('Invalid') ? 'Email o contraseña incorrectos.' : err.message) }
+    finally { setLoading(false) }
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 pitch-bg">
-      <div
-        className="fixed top-0 left-1/2 -translate-x-1/2 w-[500px] h-[300px] pointer-events-none"
-        style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(22,163,74,0.15) 0%, transparent 70%)' }}
-      />
-
-      <div className="w-full max-w-md animate-slide-up" style={{ animationFillMode: 'both' }}>
-        {/* Header */}
+      <div className="fixed inset-0 glow-top pointer-events-none"/>
+      <div className="w-full max-w-md animate-slide-up relative z-10">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-pitch-800 border border-pitch-600/30 flex items-center justify-center text-3xl mx-auto mb-4">
-            ⚽
-          </div>
-          <h1 className="font-display font-extrabold text-3xl text-pitch-50 mb-1">Ingresar</h1>
-          <p className="text-pitch-500 text-sm">{NOMBRE_TORNEO}</p>
+          <div className="text-5xl mb-4">🌍</div>
+          <h1 className="font-display text-4xl font-bold text-white mb-1" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>Ingresar</h1>
+          <p className="text-white/40 text-sm">Quiniela Mundial 2026</p>
         </div>
-
-        {/* Card */}
         <div className="glass-card rounded-3xl p-8">
-          {error && (
-            <div className="mb-5 p-4 rounded-xl bg-red-900/20 border border-red-500/30 text-red-400 text-sm font-body">
-              {error}
-            </div>
-          )}
-
+          {error && <div className="mb-5 p-4 rounded-xl text-sm" style={{background:'rgba(255,100,100,0.1)',border:'1px solid rgba(255,100,100,0.25)',color:'#ff8080'}}>{error}</div>}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-pitch-400 text-xs font-mono uppercase tracking-widest mb-2">
-                Correo electrónico
-              </label>
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="tu@email.com"
-                className="input-field"
-              />
+              <label className="block text-xs font-mono uppercase tracking-widest mb-2" style={{color:'rgba(244,167,185,0.6)'}}>Correo electrónico</label>
+              <input type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@email.com" className="input-field"/>
             </div>
-
             <div>
-              <label className="block text-pitch-400 text-xs font-mono uppercase tracking-widest mb-2">
-                Contraseña
-              </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input-field"
-              />
+              <label className="block text-xs font-mono uppercase tracking-widest mb-2" style={{color:'rgba(244,167,185,0.6)'}}>Contraseña</label>
+              <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="••••••••" className="input-field"/>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full mt-2"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Ingresando...
-                </span>
-              ) : 'Ingresar →'}
+            <button type="submit" disabled={loading} className="btn-primary w-full mt-2">
+              {loading ? <span className="flex items-center justify-center gap-2"><span className="w-4 h-4 rounded-full animate-spin" style={{border:'2px solid rgba(17,31,24,0.3)',borderTopColor:'#111F18'}}/>Ingresando...</span> : 'Ingresar →'}
             </button>
           </form>
-
-          <div className="mt-6 pt-6 border-t border-pitch-800/50 text-center">
-            <p className="text-pitch-500 text-sm">
-              ¿No tienes cuenta?{' '}
-              <Link to="/registro" className="text-pitch-400 hover:text-pitch-200 font-medium transition-colors">
-                Regístrate aquí
-              </Link>
-            </p>
+          <div className="mt-6 pt-6 text-center" style={{borderTop:'1px solid rgba(244,167,185,0.08)'}}>
+            <p className="text-white/40 text-sm">¿No tienes cuenta? <Link to="/registro" className="font-semibold transition-colors" style={{color:'#F4A7B9'}}>Regístrate</Link></p>
           </div>
         </div>
-
-        <div className="mt-6 text-center">
-          <Link to="/tabla" className="text-pitch-600 hover:text-pitch-400 text-sm transition-colors">
-            ← Ver tabla pública
-          </Link>
+        <div className="mt-5 text-center">
+          <Link to="/tabla" className="text-sm text-white/30 hover:text-white/60 transition-colors">← Ver quiniela</Link>
         </div>
       </div>
     </div>

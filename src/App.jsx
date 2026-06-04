@@ -5,27 +5,26 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import MisPrediccionesPage from './pages/MisPrediccionesPage'
 import TablaPublicaPage from './pages/TablaPublicaPage'
+import PartidosPage from './pages/PartidosPage'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <FullScreenLoader />
+  if (loading) return <Loader />
   if (!user) return <Navigate to="/login" replace />
   return children
 }
-
 function PublicOnlyRoute({ children }) {
   const { user, loading } = useAuth()
-  if (loading) return <FullScreenLoader />
+  if (loading) return <Loader />
   if (user) return <Navigate to="/mis-predicciones" replace />
   return children
 }
-
-function FullScreenLoader() {
+function Loader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#030a06]">
+    <div className="min-h-screen flex items-center justify-center" style={{background:'#111F18'}}>
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-2 border-pitch-500/30 border-t-pitch-400 rounded-full animate-spin" />
-        <p className="text-pitch-400 font-mono text-sm tracking-widest">CARGANDO...</p>
+        <div className="w-10 h-10 rounded-full animate-spin" style={{border:'2px solid rgba(244,167,185,0.2)',borderTopColor:'#F4A7B9'}}/>
+        <p className="text-white/40 font-mono text-sm tracking-widest">CARGANDO...</p>
       </div>
     </div>
   )
@@ -37,40 +36,11 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/tabla" replace />} />
-          <Route
-            path="/login"
-            element={
-              <PublicOnlyRoute>
-                <LoginPage />
-              </PublicOnlyRoute>
-            }
-          />
-          <Route
-            path="/registro"
-            element={
-              <PublicOnlyRoute>
-                <RegisterPage />
-              </PublicOnlyRoute>
-            }
-          />
-          <Route
-            path="/mis-predicciones"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <MisPrediccionesPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/tabla"
-            element={
-              <Layout>
-                <TablaPublicaPage />
-              </Layout>
-            }
-          />
+          <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
+          <Route path="/registro" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+          <Route path="/mis-predicciones" element={<PrivateRoute><Layout><MisPrediccionesPage /></Layout></PrivateRoute>} />
+          <Route path="/tabla" element={<Layout><TablaPublicaPage /></Layout>} />
+          <Route path="/partidos" element={<Layout><PartidosPage /></Layout>} />
           <Route path="*" element={<Navigate to="/tabla" replace />} />
         </Routes>
       </BrowserRouter>

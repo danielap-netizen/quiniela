@@ -1,49 +1,91 @@
 import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
-import { FECHA_CIERRE, PARTIDOS, NOMBRE_TORNEO } from '../lib/config'
-import MatchCard from '../components/MatchCard'
+import { FECHA_CIERRE, PARTIDOS, GRUPOS } from '../lib/config'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
-function CerradaBanner() {
-  return (
-    <div className="mb-8 p-5 rounded-2xl bg-amber-950/30 border border-amber-500/20 flex items-start gap-4">
-      <span className="text-2xl flex-shrink-0">🔒</span>
-      <div>
-        <h3 className="font-display font-bold text-amber-400 mb-1">Quiniela cerrada</h3>
-        <p className="text-amber-600 text-sm">
-          La fecha límite ya pasó. Tus predicciones han quedado registradas y se publicarán en la tabla pública.
-          Ya puedes ver las predicciones de todos en la{' '}
-          <a href="/tabla" className="text-amber-400 underline">tabla pública</a>.
-        </p>
-      </div>
-    </div>
-  )
+function formatFecha(iso) {
+  const d = new Date(iso)
+  return format(d, "EEE d MMM · HH:mm 'CDT'", { locale: es })
 }
 
-function ProgressBar({ total, completadas }) {
-  const pct = total === 0 ? 0 : Math.round((completadas / total) * 100)
+function MatchCard({ partido, prediccion, onSave, disabled }) {
+  const [sel, setSel] = useState(prediccion?.resultado || null)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => { setSel(prediccion?.resultado || null) }, [prediccion])
+
+  const isDirty = sel !== (prediccion?.resultado || null)
+  const isOpen = new Date() < FECHA_CIERRE
+
+  const handleSel = (v) => { if (!disabled) setSel(v) }
+  const handleSave = async () => {
+    if (!sel || !isDirty || disabled) return
+    setSaving(true)
+    try {
+      await onSave(partido.id, sel)
+      setSaved(true); setTimeout(() => setSaved(false), 1500)
+    } finally { setSaving(false) }
+  }
+
+  const opts = [
+    { key:'L', label:'Local', name: partido.local },
+    { key:'E', label:'Empate', name: 'Empate' },
+    { key:'V', label:'Visita', name: partido.visitante },
+  ]
+
   return (
-    <div className="glass-card rounded-2xl p-5 mb-6">
+    <div className="match-card">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-display font-medium text-pitch-300">
-          Progreso de predicciones
-        </span>
-        <span className="font-mono text-sm text-pitch-400">
-          <span className="text-pitch-200 font-bold">{completadas}</span>/{total}
-        </span>
+        <span className="text-xs font-mono uppercase tracking-wider" style={{color:'rgba(244,167,185,0.5)'}}>Grupo {partido.grupo}</span>
+        <span className="text-xs font-mono" style={{color:'rgba(240,240,238,0.35)'}}>{formatFecha(partido.fecha)}</span>
       </div>
-      <div className="h-2 bg-pitch-900 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-gradient-to-r from-pitch-600 to-pitch-400 rounded-full transition-all duration-700"
-          style={{ width: `${pct}%` }}
-        />
+
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex-1 text-right">
+          <div className="text-3xl mb-0.5">{partido.localFlag}</div>
+          <div className="font-bold text-lg text-white leading-tight" style={{fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.01em'}}>{partido.local}</div>
+          <div className="text-xs text-white/35 mt-0.5">Local</div>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {opts.map(o => (
+            <button key={o.key} onClick={() => handleSel(o.key)}
+              className={`lev-btn ${sel === o.key ? 'selected' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              title={o.name}>
+              {o.key}
+            </button>
+          ))}
+        </div>
+        <div className="flex-1 text-left">
+          <div className="text-3xl mb-0.5">{partido.visitanteFlag}</div>
+          <div className="font-bold text-lg text-white leading-tight" style={{fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:'0.01em'}}>{partido.visitante}</div>
+          <div className="text-xs text-white/35 mt-0.5">Visita</div>
+        </div>
       </div>
-      {completadas === total && (
-        <p className="mt-2 text-xs font-mono text-pitch-500 text-right">
-          ✓ Todas las predicciones completas
-        </p>
+
+      {sel && <div className="text-center text-sm mb-3" style={{color:'rgba(244,167,185,0.7)'}}>
+        {sel === 'L' ? `Gana ${partido.local}` : sel === 'V' ? `Gana ${partido.visitante}` : 'Empate'}
+      </div>}
+
+      {!disabled && (
+        <button onClick={handleSave} disabled={!sel || !isDirty || saving}
+          className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200"
+          style={{
+            background: saved ? 'rgba(244,167,185,0.15)' : (sel && isDirty ? '#F4A7B9' : 'rgba(244,167,185,0.06)'),
+            color: saved ? '#F4A7B9' : (sel && isDirty ? '#111F18' : 'rgba(244,167,185,0.3)'),
+            cursor: (!sel || !isDirty) ? 'not-allowed' : 'pointer',
+            fontFamily:"'Plus Jakarta Sans',sans-serif"
+          }}>
+          {saving ? 'Guardando...' : saved ? '✓ Guardado' : sel && isDirty ? 'Guardar predicción' : prediccion ? 'Guardado' : 'Elige un resultado'}
+        </button>
+      )}
+      {disabled && (
+        <div className="text-center text-xs font-mono py-1" style={{color:'rgba(244,167,185,0.3)'}}>
+          {prediccion ? `✓ ${sel === 'L' ? partido.local : sel === 'V' ? partido.visitante : 'Empate'}` : '— sin predicción —'}
+        </div>
       )}
     </div>
   )
@@ -51,141 +93,100 @@ function ProgressBar({ total, completadas }) {
 
 export default function MisPrediccionesPage() {
   const { user } = useAuth()
-  const [predicciones, setPredicciones] = useState({})
+  const [preds, setPreds] = useState({})
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-
+  const [grupoActivo, setGrupoActivo] = useState('A')
   const isOpen = new Date() < FECHA_CIERRE
 
-  const fetchPredicciones = useCallback(async () => {
+  const fetchPreds = useCallback(async () => {
     if (!user) return
-    const { data, error } = await supabase
-      .from('predicciones')
-      .select('*')
-      .eq('user_id', user.id)
-
-    if (error) {
-      setError('Error al cargar tus predicciones: ' + error.message)
-    } else {
-      const map = {}
-      data.forEach(p => { map[p.partido_id] = p })
-      setPredicciones(map)
-    }
-    setLoading(false)
+    const { data } = await supabase.from('predicciones').select('*').eq('user_id', user.id)
+    const map = {}; (data || []).forEach(p => { map[p.partido_id] = p }); setPreds(map); setLoading(false)
   }, [user])
 
-  useEffect(() => {
-    fetchPredicciones()
-  }, [fetchPredicciones])
+  useEffect(() => { fetchPreds() }, [fetchPreds])
 
-  const handleSave = async (partidoId, golesLocal, golesVisitante) => {
-    // Server-side guard: check closure again
-    if (new Date() >= FECHA_CIERRE) {
-      throw new Error('La quiniela está cerrada.')
-    }
-
-    const existing = predicciones[partidoId]
+  const handleSave = async (partidoId, resultado) => {
+    if (new Date() >= FECHA_CIERRE) throw new Error('Quiniela cerrada')
+    const existing = preds[partidoId]
     if (existing) {
-      const { error } = await supabase
-        .from('predicciones')
-        .update({ goles_local: golesLocal, goles_visitante: golesVisitante, updated_at: new Date().toISOString() })
-        .eq('id', existing.id)
-        .eq('user_id', user.id)
-
-      if (error) throw error
-      setPredicciones(prev => ({
-        ...prev,
-        [partidoId]: { ...existing, goles_local: golesLocal, goles_visitante: golesVisitante }
-      }))
+      await supabase.from('predicciones').update({ resultado, updated_at: new Date().toISOString() }).eq('id', existing.id).eq('user_id', user.id)
+      setPreds(p => ({ ...p, [partidoId]: { ...existing, resultado } }))
     } else {
-      const { data, error } = await supabase
-        .from('predicciones')
-        .insert({
-          user_id: user.id,
-          partido_id: partidoId,
-          goles_local: golesLocal,
-          goles_visitante: golesVisitante,
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      setPredicciones(prev => ({ ...prev, [partidoId]: data }))
+      const { data } = await supabase.from('predicciones').insert({ user_id: user.id, partido_id: partidoId, resultado }).select().single()
+      setPreds(p => ({ ...p, [partidoId]: data }))
     }
   }
 
-  const completadas = PARTIDOS.filter(p => predicciones[p.id] != null).length
+  const partidosGrupo = PARTIDOS.filter(p => p.grupo === grupoActivo)
+  const completadas = PARTIDOS.filter(p => preds[p.id]).length
+  const pct = Math.round((completadas / PARTIDOS.length) * 100)
 
-  // Group by phase
-  const phases = [...new Set(PARTIDOS.map(p => p.fase))]
-
-  if (loading) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
-        <div className="w-10 h-10 border-2 border-pitch-500/30 border-t-pitch-400 rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-pitch-500 font-mono text-sm">Cargando predicciones...</p>
-      </div>
-    )
-  }
+  if (loading) return (
+    <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+      <div className="w-10 h-10 rounded-full animate-spin mx-auto mb-4" style={{border:'2px solid rgba(244,167,185,0.2)',borderTopColor:'#F4A7B9'}}/>
+    </div>
+  )
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      {/* Header */}
-      <div className="mb-8 animate-fade-in">
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-3xl">✏️</span>
-          <div>
-            <h1 className="font-display font-extrabold text-3xl text-pitch-50">Mis predicciones</h1>
-            <p className="text-pitch-500 text-sm mt-0.5">
-              {isOpen
-                ? `Cierre: ${format(FECHA_CIERRE, "d 'de' MMMM, HH:mm", { locale: es })}`
-                : 'La quiniela está cerrada'}
-            </p>
-          </div>
-        </div>
+    <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="mb-6 animate-fade-in">
+        <h1 className="font-bold text-4xl text-white mb-1" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>Mis predicciones</h1>
+        <p className="text-white/40 text-sm">
+          {isOpen
+            ? `Cierre: ${format(FECHA_CIERRE, "d 'de' MMMM, HH:mm 'CDT'", {locale:es})} · Puedes cambiar hasta entonces`
+            : 'Quiniela cerrada · resultados bloqueados'}
+        </p>
       </div>
 
-      {error && (
-        <div className="mb-6 p-4 rounded-xl bg-red-900/20 border border-red-500/30 text-red-400 text-sm">
-          {error}
+      {!isOpen && (
+        <div className="mb-6 p-4 rounded-2xl" style={{background:'rgba(244,167,185,0.06)',border:'1px solid rgba(244,167,185,0.15)'}}>
+          <p className="text-sm" style={{color:'rgba(244,167,185,0.7)'}}>🔒 La quiniela cerró. Tus predicciones están guardadas y visibles en la tabla pública.</p>
         </div>
       )}
 
-      {!isOpen && <CerradaBanner />}
-
-      <ProgressBar total={PARTIDOS.length} completadas={completadas} />
-
-      {/* Matches by phase */}
-      {phases.map(fase => (
-        <div key={fase} className="mb-8">
-          <h2 className="font-display font-bold text-sm text-pitch-500 uppercase tracking-widest mb-4 flex items-center gap-3">
-            <span className="flex-1 h-px bg-pitch-800" />
-            {fase}
-            <span className="flex-1 h-px bg-pitch-800" />
-          </h2>
-          <div className="space-y-4">
-            {PARTIDOS.filter(p => p.fase === fase).map(partido => (
-              <div key={partido.id} className="stagger-child animate-slide-up" style={{ animationFillMode: 'both' }}>
-                <MatchCard
-                  partido={partido}
-                  prediccion={predicciones[partido.id]}
-                  onSave={handleSave}
-                  disabled={!isOpen}
-                />
-              </div>
-            ))}
-          </div>
+      <div className="glass-card rounded-2xl p-4 mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm font-semibold text-white/60">Progreso</span>
+          <span className="text-sm font-mono" style={{color:'#F4A7B9'}}>{completadas}/{PARTIDOS.length}</span>
         </div>
-      ))}
-
-      {/* Bottom note */}
-      <div className="mt-8 p-4 rounded-xl bg-pitch-950/50 border border-pitch-800/30 text-center">
-        <p className="text-pitch-600 text-xs font-mono">
-          {isOpen
-            ? '💡 Tus predicciones se guardan automáticamente. Puedes editarlas hasta el cierre.'
-            : '🏆 Las predicciones de todos ya son visibles en la tabla pública.'}
-        </p>
+        <div className="h-2 rounded-full" style={{background:'rgba(244,167,185,0.1)'}}>
+          <div className="h-full rounded-full transition-all duration-700" style={{width:`${pct}%`,background:'#F4A7B9'}}/>
+        </div>
+        {completadas === PARTIDOS.length && <p className="text-xs text-right mt-1.5" style={{color:'rgba(244,167,185,0.5)'}}>✓ ¡Completaste todos los partidos!</p>}
       </div>
+
+      <div className="flex flex-wrap gap-1.5 mb-6">
+        {['A','B','C','D','E','F','G','H','I','J','K','L'].map(g => {
+          const total = PARTIDOS.filter(p => p.grupo === g).length
+          const done = PARTIDOS.filter(p => p.grupo === g && preds[p.id]).length
+          const active = g === grupoActivo
+          return (
+            <button key={g} onClick={() => setGrupoActivo(g)}
+              className="px-3 py-1.5 rounded-lg text-sm font-bold transition-all duration-150"
+              style={{
+                fontFamily:"'Barlow Condensed',sans-serif",
+                fontSize:'0.95rem',
+                letterSpacing:'0.04em',
+                background: active ? '#F4A7B9' : 'rgba(244,167,185,0.08)',
+                color: active ? '#111F18' : done === total ? 'rgba(244,167,185,0.7)' : 'rgba(240,240,238,0.4)',
+                border: active ? 'none' : done === total ? '1px solid rgba(244,167,185,0.25)' : '1px solid rgba(244,167,185,0.08)',
+              }}>
+              {g} {done === total ? '✓' : `${done}/${total}`}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="space-y-3">
+        {partidosGrupo.map(p => (
+          <MatchCard key={p.id} partido={p} prediccion={preds[p.id]} onSave={handleSave} disabled={!isOpen}/>
+        ))}
+      </div>
+
+      <p className="text-center text-xs font-mono mt-8" style={{color:'rgba(244,167,185,0.2)'}}>
+        {isOpen ? '💡 Tus predicciones se guardan automáticamente por partido.' : '🏆 Los resultados ya son públicos.'}
+      </p>
     </div>
   )
 }
