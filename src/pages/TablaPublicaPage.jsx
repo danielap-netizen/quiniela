@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { FECHA_CIERRE, PARTIDOS, NOMBRE_TORNEO } from '../lib/config'
@@ -37,37 +37,45 @@ export default function TablaPublicaPage() {
   const [loading, setLoading] = useState(true)
   const isOpen = new Date() < FECHA_CIERRE
 
-  useEffect(() => {
-    const load = async () => {
-      const { count } = await supabase.from('profiles').select('*',{count:'exact',head:true})
-      setTotalReg(count || 0)
+  const load = useCallback(async () => {
+    const { count } = await supabase.from('profiles').select('*',{count:'exact',head:true})
+    setTotalReg(count || 0)
 
-      const { data: resData } = await supabase.from('resultados').select('partido_id, resultado')
-      const resMap = {}; (resData || []).forEach(r => { resMap[r.partido_id] = r.resultado }); setResultados(resMap)
+    const { data: resData } = await supabase.from('resultados').select('partido_id, resultado')
+    const resMap = {}; (resData || []).forEach(r => { resMap[r.partido_id] = r.resultado }); setResultados(resMap)
 
-      if (!isOpen) {
-        const [{ data: predsData }, { data: profilesData }] = await Promise.all([
-          supabase.from('predicciones').select('user_id, partido_id, resultado'),
-          supabase.from('profiles').select('id, nombre')
-        ])
-        const nombreMap = {}; (profilesData || []).forEach(p => { nombreMap[p.id] = p.nombre })
-        const byUser = {}
-        ;(predsData || []).forEach(p => {
-          if (!byUser[p.user_id]) byUser[p.user_id] = {}
-          byUser[p.user_id][p.partido_id] = p.resultado
-        })
-        const lista = Object.entries(byUser).map(([uid, preds]) => {
-          let pts = 0
-          Object.entries(preds).forEach(([pid, pred]) => { if (resMap[pid] && resMap[pid] === pred) pts++ })
-          return { nombre: nombreMap[uid] || 'Participante', preds, pts }
-        })
-        lista.sort((a,b) => b.pts - a.pts)
-        setParticipantes(lista)
-      }
-      setLoading(false)
+    if (!isOpen) {
+      const [{ data: predsData }, { data: profilesData }] = await Promise.all([
+        supabase.from('predicciones').select('user_id, partido_id, resultado'),
+        supabase.from('profiles').select('id, nombre')
+      ])
+      const nombreMap = {}; (profilesData || []).forEach(p => { nombreMap[p.id] = p.nombre })
+      const byUser = {}
+      ;(predsData || []).forEach(p => {
+        if (!byUser[p.user_id]) byUser[p.user_id] = {}
+        byUser[p.user_id][p.partido_id] = p.resultado
+      })
+      const lista = Object.entries(byUser).map(([uid, preds]) => {
+        let pts = 0
+        Object.entries(preds).forEach(([pid, pred]) => { if (resMap[pid] && resMap[pid] === pred) pts++ })
+        return { nombre: nombreMap[uid] || 'Participante', preds, pts }
+      })
+      lista.sort((a,b) => b.pts - a.pts)
+      setParticipantes(lista)
     }
-    load()
+    setLoading(false)
   }, [isOpen])
+
+  useEffect(() => {
+    load()
+    const onVisible = () => { if (document.visibilityState === 'visible') load() }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', load)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', load)
+    }
+  }, [load])
 
   const recentPts = participantes.filter(p => p.pts > 0).slice(0,3)
 
