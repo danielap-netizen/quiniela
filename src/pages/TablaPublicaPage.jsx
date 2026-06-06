@@ -93,7 +93,7 @@ export default function TablaPublicaPage() {
           <div className="glass-card rounded-3xl p-8 text-center mb-6 animate-slide-up">
             <p className="text-xs font-mono uppercase tracking-widest mb-1" style={{color:'rgba(244,167,185,0.5)'}}>Predicciones cierran el</p>
             <p className="font-bold text-2xl text-white mb-2" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>
-              {format(FECHA_CIERRE,"EEEE d 'de' MMMM, HH:mm 'CDT'",{locale:es})}
+              {new Intl.DateTimeFormat('es-MX',{timeZone:'America/Mexico_City',weekday:'long',day:'numeric',month:'long',hour:'2-digit',minute:'2-digit',hour12:false}).format(FECHA_CIERRE)} CDMX
             </p>
             <Countdown fechaCierre={FECHA_CIERRE}/>
             <p className="text-xs text-white/25 mt-2">1 hora antes del partido inaugural México 🇲🇽 vs Sudáfrica 🇿🇦</p>
@@ -166,47 +166,3 @@ export default function TablaPublicaPage() {
                         <tr style={{borderBottom:'1px solid rgba(244,167,185,0.08)'}}>
                           <th className="text-left px-5 py-4 text-xs font-mono uppercase tracking-wider sticky left-0" style={{color:'rgba(244,167,185,0.4)',background:'rgba(15,32,22,0.9)'}}>Participante</th>
                           <th className="px-4 py-4 text-xs font-mono uppercase tracking-wider" style={{color:'rgba(244,167,185,0.4)'}}>Pts</th>
-                          {PARTIDOS.slice(0,20).map(m => (
-                            <th key={m.id} className="px-2 py-4 text-xs font-mono" style={{color:'rgba(244,167,185,0.3)',minWidth:'52px'}}>
-                              {m.localFlag}{m.visitanteFlag}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {participantes.map((p,i) => (
-                          <tr key={p.nombre} style={{borderBottom:'1px solid rgba(244,167,185,0.05)',background: i%2===0 ? 'transparent' : 'rgba(244,167,185,0.02)'}}>
-                            <td className="px-5 py-3 sticky left-0 font-semibold text-white" style={{background: i%2===0 ? 'rgba(15,32,22,0.85)' : 'rgba(17,28,21,0.85)'}}>
-                              {i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : `${i+1}. `}{p.nombre}
-                            </td>
-                            <td className="px-4 py-3 text-center font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts}</td>
-                            {PARTIDOS.slice(0,20).map(m => {
-                              const pred = p.preds[m.id]
-                              const res = resultados[m.id]
-                              const correct = pred && res && pred === res
-                              return (
-                                <td key={m.id} className="px-2 py-3 text-center font-mono text-xs">
-                                  <span style={{
-                                    color: correct ? '#F4A7B9' : pred ? 'rgba(240,240,238,0.4)' : 'rgba(244,167,185,0.15)',
-                                    fontFamily:"'Barlow Condensed',sans-serif",
-                                    fontSize:'0.95rem',
-                                    fontWeight: correct ? '700' : '400'
-                                  }}>{pred || '–'}</span>
-                                </td>
-                              )
-                            })}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {PARTIDOS.length > 20 && <p className="text-center text-xs py-3" style={{color:'rgba(244,167,185,0.25)'}}>Mostrando primeros 20 partidos · Todos los puntos están calculados</p>}
-                </div>
-              )}
-            </>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
