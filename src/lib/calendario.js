@@ -6,6 +6,15 @@ function aFormatoICS(iso) {
   return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
 }
 
+// Limpia texto para que sea seguro en un archivo .ics
+function limpiar(texto) {
+  return String(texto)
+    .replace(/\\/g, '')
+    .replace(/,/g, ' ')
+    .replace(/;/g, ' ')
+    .replace(/·/g, '-')
+}
+
 // Genera el contenido de un archivo .ics con los 72 partidos
 function generarICS() {
   const ahora = aFormatoICS(new Date().toISOString())
@@ -15,36 +24,37 @@ function generarICS() {
     'PRODID:-//Quiniela Mundial 2026//ES',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    `X-WR-CALNAME:${NOMBRE_CORTO}`,
+    `X-WR-CALNAME:${limpiar(NOMBRE_CORTO)}`,
   ]
 
   PARTIDOS.forEach(p => {
     const inicio = aFormatoICS(p.fecha)
-    // Duración estimada del partido: 2 horas
     const finDate = new Date(new Date(p.fecha).getTime() + 2 * 60 * 60 * 1000)
     const fin = aFormatoICS(finDate.toISOString())
-    const titulo = `${p.local} vs ${p.visitante}`
-    const desc = `Mundial 2026 · Grupo ${p.grupo} · ${p.ciudad}`
+    const titulo = limpiar(`${p.local} vs ${p.visitante}`)
+    const desc = limpiar(`Mundial 2026 - Grupo ${p.grupo} - ${p.ciudad}`)
+    const lugar = limpiar(p.ciudad)
 
     lineas.push(
       'BEGIN:VEVENT',
-      `UID:${p.id}@quiniela-mundial-2026`,
+      `UID:mundial2026-${p.id}@quiniela`,
       `DTSTAMP:${ahora}`,
       `DTSTART:${inicio}`,
       `DTEND:${fin}`,
-      `SUMMARY:⚽ ${titulo}`,
+      `SUMMARY:${titulo}`,
       `DESCRIPTION:${desc}`,
-      `LOCATION:${p.ciudad}`,
+      `LOCATION:${lugar}`,
       'BEGIN:VALARM',
-      'TRIGGER:-PT30M',
       'ACTION:DISPLAY',
-      `DESCRIPTION:${titulo} empieza en 30 minutos`,
+      `DESCRIPTION:${titulo}`,
+      'TRIGGER:-PT30M',
       'END:VALARM',
       'END:VEVENT'
     )
   })
 
   lineas.push('END:VCALENDAR')
+  lineas.push('')
   return lineas.join('\r\n')
 }
 
