@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { FECHA_CIERRE, PARTIDOS, NOMBRE_TORNEO } from '../lib/config'
 import { useAuth } from '../lib/auth'
+import { descargarCalendario } from '../lib/calendario'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -112,13 +113,17 @@ export default function TablaPublicaPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-2 gap-3 mb-3">
             {user
               ? <Link to="/mis-predicciones" className="btn-primary text-center block py-3.5">✏️ Mis picks</Link>
               : <Link to="/registro" className="btn-primary text-center block py-3.5">⚽ Participar</Link>
             }
             <Link to="/partidos" className="btn-secondary text-center block py-3.5">📅 Ver partidos</Link>
           </div>
+
+          <button onClick={descargarCalendario} className="btn-secondary w-full text-center block py-3.5 mb-6">
+            🗓️ Agregar los 72 partidos a mi calendario
+          </button>
 
           <div className="grid grid-cols-2 gap-3">
             {[{n:'Participantes',v:totalReg},{n:'Partidos',v:72}].map(({n,v}) => (
@@ -166,3 +171,47 @@ export default function TablaPublicaPage() {
                         <tr style={{borderBottom:'1px solid rgba(244,167,185,0.08)'}}>
                           <th className="text-left px-5 py-4 text-xs font-mono uppercase tracking-wider sticky left-0" style={{color:'rgba(244,167,185,0.4)',background:'rgba(15,32,22,0.9)'}}>Participante</th>
                           <th className="px-4 py-4 text-xs font-mono uppercase tracking-wider" style={{color:'rgba(244,167,185,0.4)'}}>Pts</th>
+                          {PARTIDOS.slice(0,20).map(m => (
+                            <th key={m.id} className="px-2 py-4 text-xs font-mono" style={{color:'rgba(244,167,185,0.3)',minWidth:'52px'}}>
+                              {m.localFlag}{m.visitanteFlag}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {participantes.map((p,i) => (
+                          <tr key={p.nombre} style={{borderBottom:'1px solid rgba(244,167,185,0.05)',background: i%2===0 ? 'transparent' : 'rgba(244,167,185,0.02)'}}>
+                            <td className="px-5 py-3 sticky left-0 font-semibold text-white" style={{background: i%2===0 ? 'rgba(15,32,22,0.85)' : 'rgba(17,28,21,0.85)'}}>
+                              {i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : `${i+1}. `}{p.nombre}
+                            </td>
+                            <td className="px-4 py-3 text-center font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts}</td>
+                            {PARTIDOS.slice(0,20).map(m => {
+                              const pred = p.preds[m.id]
+                              const res = resultados[m.id]
+                              const correct = pred && res && pred === res
+                              return (
+                                <td key={m.id} className="px-2 py-3 text-center font-mono text-xs">
+                                  <span style={{
+                                    color: correct ? '#F4A7B9' : pred ? 'rgba(240,240,238,0.4)' : 'rgba(244,167,185,0.15)',
+                                    fontFamily:"'Barlow Condensed',sans-serif",
+                                    fontSize:'0.95rem',
+                                    fontWeight: correct ? '700' : '400'
+                                  }}>{pred || '–'}</span>
+                                </td>
+                              )
+                            })}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {PARTIDOS.length > 20 && <p className="text-center text-xs py-3" style={{color:'rgba(244,167,185,0.25)'}}>Mostrando primeros 20 partidos · Todos los puntos están calculados</p>}
+                </div>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
