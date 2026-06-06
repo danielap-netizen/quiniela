@@ -2,24 +2,19 @@ import { useState } from 'react'
 import { PARTIDOS } from '../lib/config'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-
 const GRUPOS = ['A','B','C','D','E','F','G','H','I','J','K','L']
-
 function formatFecha(iso) {
-  return format(new Date(iso), "EEE d MMM · HH:mm 'CDT'", { locale: es })
+  return format(new Date(iso), "EEE d MMM · HH:mm 'hrs'", { locale: es })
 }
-
 export default function PartidosPage() {
   const [grupoActivo, setGrupoActivo] = useState('A')
   const partidosGrupo = PARTIDOS.filter(p => p.grupo === grupoActivo)
-
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <div className="mb-6">
         <h1 className="font-bold text-4xl text-white mb-1" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>Fase de Grupos</h1>
-        <p className="text-white/40 text-sm">72 partidos · 11 – 27 de junio · Hora CDT</p>
+        <p className="text-white/40 text-sm">72 partidos · 11 – 27 de junio · hora local</p>
       </div>
-
       <div className="flex flex-wrap gap-1.5 mb-6">
         {GRUPOS.map(g => (
           <button key={g} onClick={() => setGrupoActivo(g)}
@@ -36,7 +31,6 @@ export default function PartidosPage() {
           </button>
         ))}
       </div>
-
       <div className="space-y-3">
         {partidosGrupo.map((p, i) => (
           <div key={p.id} className="match-card animate-slide-up" style={{animationDelay:`${i*0.05}s`,animationFillMode:'both'}}>
