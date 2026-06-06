@@ -8,7 +8,7 @@ import { es } from 'date-fns/locale'
 
 function formatFecha(iso) {
   const d = new Date(iso)
-  return format(d, "EEE d MMM · HH:mm 'CDT'", { locale: es })
+  return format(d, "EEE d MMM · HH:mm 'hrs'", { locale: es })
 }
 
 function MatchCard({ partido, prediccion, onSave, disabled }) {
@@ -134,7 +134,7 @@ export default function MisPrediccionesPage() {
         <h1 className="font-bold text-4xl text-white mb-1" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>Mis predicciones</h1>
         <p className="text-white/55 text-sm">
           {isOpen
-            ? `Cierre: ${format(FECHA_CIERRE, "d 'de' MMMM, HH:mm 'CDT'", {locale:es})} · Puedes cambiar hasta entonces`
+            ? `Cierre: ${format(FECHA_CIERRE, "d 'de' MMMM, HH:mm 'hrs'", {locale:es})} · Puedes cambiar hasta entonces`
             : 'Quiniela cerrada · resultados bloqueados'}
         </p>
       </div>
