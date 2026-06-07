@@ -134,12 +134,14 @@ export default function TablaPublicaPage() {
           </button>
 
           <div className="grid grid-cols-2 gap-3">
-            {[{n:'Participantes',v:totalReg},{n:'Partidos',v:72}].map(({n,v}) => (
-              <div key={n} className="glass-card rounded-2xl p-5 text-center">
-                <div className="font-bold text-5xl text-white mb-1" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{v}</div>
-                <div className="text-xs text-white/35 uppercase tracking-wider font-mono">{n}</div>
-              </div>
-            ))}
+            <Link to="/participantes" className="glass-card rounded-2xl p-5 text-center block transition-all hover:scale-[1.02]">
+              <div className="font-bold text-5xl text-white mb-1" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{totalReg}</div>
+              <div className="text-xs uppercase tracking-wider font-mono" style={{color:'rgba(244,167,185,0.7)'}}>Participantes →</div>
+            </Link>
+            <div className="glass-card rounded-2xl p-5 text-center">
+              <div className="font-bold text-5xl text-white mb-1" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>72</div>
+              <div className="text-xs text-white/35 uppercase tracking-wider font-mono">Partidos</div>
+            </div>
           </div>
         </div>
       )}
