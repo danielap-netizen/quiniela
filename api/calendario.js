@@ -102,10 +102,10 @@ export default async function handler(req, res) {
   let lineas = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Quiniela Mundial 2026//ES',
+    'PRODID:-//Mundial 2026//ES',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:Quiniela Mundial 2026',
+    'X-WR-CALNAME:Mundial 2026',
     'REFRESH-INTERVAL;VALUE=DURATION:PT1H',
     'X-PUBLISHED-TTL:PT1H',
   ]
@@ -114,9 +114,9 @@ export default async function handler(req, res) {
     const inicio = fmt(p.fecha)
     const fin = fmt(new Date(new Date(p.fecha).getTime() + 2*60*60*1000).toISOString())
     const r = resultados[p.id]
-    let titulo = `${p.local} vs ${p.visitante}`
+    let titulo = `⚽ ${p.local} vs ${p.visitante}`
     if (r && r.goles_local != null && r.goles_visitante != null) {
-      titulo = `${p.local} ${r.goles_local}-${r.goles_visitante} ${p.visitante}`
+      titulo = `⚽ ${p.local} ${r.goles_local}-${r.goles_visitante} ${p.visitante}`
     }
     lineas.push(
       'BEGIN:VEVENT',
