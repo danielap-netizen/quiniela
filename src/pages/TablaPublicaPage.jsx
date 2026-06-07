@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { FECHA_CIERRE, PARTIDOS, NOMBRE_TORNEO } from '../lib/config'
+import { FECHA_CIERRE, PARTIDOS, GRUPOS } from '../lib/config'
 import { useAuth } from '../lib/auth'
 import { descargarCalendario } from '../lib/calendario'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+
+// Muestra máximo las primeras 2 palabras del nombre
+function nombreCorto(nombre) {
+  const partes = String(nombre || 'Participante').trim().split(/\s+/)
+  return partes.slice(0, 2).join(' ')
+}
 
 function Countdown({ fechaCierre }) {
   const [diff, setDiff] = useState(fechaCierre - new Date())
@@ -29,13 +33,87 @@ function Countdown({ fechaCierre }) {
   )
 }
 
+// Vista destapada: por cada partido, quién eligió L / E / V
+function VistaDestapada({ predsPorPartido }) {
+  const [grupoActivo, setGrupoActivo] = useState('A')
+  const partidosGrupo = PARTIDOS.filter(p => p.grupo === grupoActivo)
+
+  return (
+    <div className="max-w-xl mx-auto">
+      <div className="flex flex-wrap gap-1.5 mb-6 justify-center">
+        {GRUPOS.map(g => (
+          <button key={g} onClick={() => setGrupoActivo(g)}
+            className="px-3 py-1.5 rounded-lg text-sm font-bold transition-all"
+            style={{
+              fontFamily:"'Barlow Condensed',sans-serif", fontSize:'0.95rem', letterSpacing:'0.04em',
+              background: g === grupoActivo ? '#F4A7B9' : 'rgba(244,167,185,0.08)',
+              color: g === grupoActivo ? '#111F18' : 'rgba(240,240,238,0.5)',
+            }}>
+            Grupo {g}
+          </button>
+        ))}
+      </div>
+
+      <div className="space-y-4">
+        {partidosGrupo.map(p => {
+          const votos = predsPorPartido[p.id] || { L: [], E: [], V: [] }
+          const cols = [
+            { key:'L', titulo:`Gana ${p.local}`, gente: votos.L, bg:'rgba(244,167,185,0.85)', tc:'#111F18' },
+            { key:'E', titulo:'Empate', gente: votos.E, bg:'rgba(244,167,185,0.3)', tc:'#F8C5D3' },
+            { key:'V', titulo:`Gana ${p.visitante}`, gente: votos.V, bg:'rgba(244,167,185,0.18)', tc:'#F8C5D3' },
+          ]
+          return (
+            <div key={p.id} className="glass-card rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-mono uppercase tracking-wider" style={{color:'rgba(244,167,185,0.5)'}}>Grupo {p.grupo}</span>
+              </div>
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="text-2xl">{p.localFlag}</span>
+                <span className="font-bold text-lg text-white" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{p.local}</span>
+                <span className="text-white/30 text-sm mx-1">vs</span>
+                <span className="font-bold text-lg text-white" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{p.visitante}</span>
+                <span className="text-2xl">{p.visitanteFlag}</span>
+              </div>
+              <div className="flex gap-1.5 items-start">
+                {cols.map(c => (
+                  <div key={c.key} className="flex-1 min-w-0 rounded-xl overflow-hidden" style={{background:'rgba(244,167,185,0.06)'}}>
+                    <div className="px-1 py-2 text-center" style={{background:c.bg}}>
+                      <div className="font-bold text-xl" style={{color:c.tc, fontFamily:"'Barlow Condensed',sans-serif"}}>{c.gente.length}</div>
+                      <div className="text-[10px] uppercase tracking-wide font-mono leading-tight px-1" style={{color:c.tc}}>{c.titulo}</div>
+                    </div>
+                    <div className="px-1.5 py-2">
+                      {c.gente.length === 0
+                        ? <div className="text-center text-xs py-1" style={{color:'rgba(255,255,255,0.2)'}}>—</div>
+                        : c.gente.map((n, idx) => (
+                          <div key={idx} className="text-xs py-1 text-center leading-tight" style={{color:'rgba(255,255,255,0.8)', fontFamily:"'Plus Jakarta Sans',sans-serif"}}>
+                            {nombreCorto(n)}
+                          </div>
+                        ))
+                      }
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function TablaPublicaPage() {
   const { user } = useAuth()
   const [participantes, setParticipantes] = useState([])
+  const [predsPorPartido, setPredsPorPartido] = useState({})
   const [resultados, setResultados] = useState({})
   const [totalReg, setTotalReg] = useState(0)
   const [loading, setLoading] = useState(true)
-  const isOpen = new Date() < FECHA_CIERRE
+  const [tab, setTab] = useState('puntos')
+
+  // Modo prueba: agregar ?preview=1 a la URL para ver la vista cerrada aunque esté abierta
+  const preview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1'
+  const isOpen = (new Date() < FECHA_CIERRE) && !preview
 
   const load = useCallback(async () => {
     const { count } = await supabase.from('profiles').select('*',{count:'exact',head:true})
@@ -51,10 +129,15 @@ export default function TablaPublicaPage() {
       ])
       const nombreMap = {}; (profilesData || []).forEach(p => { nombreMap[p.id] = p.nombre })
       const byUser = {}
+      const porPartido = {}
       ;(predsData || []).forEach(p => {
         if (!byUser[p.user_id]) byUser[p.user_id] = {}
         byUser[p.user_id][p.partido_id] = p.resultado
+        if (!porPartido[p.partido_id]) porPartido[p.partido_id] = { L: [], E: [], V: [] }
+        const nombre = nombreMap[p.user_id] || 'Participante'
+        if (porPartido[p.partido_id][p.resultado]) porPartido[p.partido_id][p.resultado].push(nombre)
       })
+      setPredsPorPartido(porPartido)
       const lista = Object.entries(byUser).map(([uid, preds]) => {
         let pts = 0
         Object.entries(preds).forEach(([pid, pred]) => { if (resMap[pid] && resMap[pid] === pred) pts++ })
@@ -93,12 +176,12 @@ export default function TablaPublicaPage() {
           <span>Familia Pereyra Fernández</span>
         </div>
         <h1 className="font-bold leading-none text-white mb-3" style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'clamp(2.5rem,6vw,4rem)'}}>
-          {isOpen ? 'Quiniela abierta' : 'Tabla de puntos'}
+          {isOpen ? 'Quiniela abierta' : 'Quiniela cerrada'}
         </h1>
         <p className="text-white/40 max-w-lg mx-auto">
           {isOpen
             ? `¡Ya hay ${totalReg} ${totalReg === 1 ? 'participante' : 'participantes'}! Registra tus picks antes del cierre.`
-            : 'La quiniela cerró. Así van los puntos.'}
+            : '¡A ver cómo le fue a cada quien!'}
         </p>
       </div>
 
@@ -159,69 +242,88 @@ export default function TablaPublicaPage() {
             </div>
           ) : (
             <>
-              {recentPts.length > 0 && (
-                <div className="max-w-xl mx-auto mb-8">
-                  <div className="glass-card rounded-2xl p-5" style={{border:'1px solid rgba(244,167,185,0.15)'}}>
-                    <p className="text-xs font-mono uppercase tracking-widest mb-3" style={{color:'rgba(244,167,185,0.5)'}}>🔥 Lideran la quiniela</p>
-                    {recentPts.map((p,i) => (
-                      <div key={p.nombre} className="flex items-center justify-between py-2" style={{borderTop: i>0 ? '1px solid rgba(244,167,185,0.06)' : 'none'}}>
-                        <span className="font-semibold text-white">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {p.nombre}</span>
-                        <span className="font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts} pts</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="flex gap-2 mb-6 justify-center">
+                <button onClick={() => setTab('puntos')}
+                  className="px-5 py-2 rounded-xl text-sm font-semibold transition-all"
+                  style={{background: tab==='puntos' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tab==='puntos' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
+                  🏆 Tabla de puntos
+                </button>
+                <button onClick={() => setTab('predicciones')}
+                  className="px-5 py-2 rounded-xl text-sm font-semibold transition-all"
+                  style={{background: tab==='predicciones' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tab==='predicciones' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
+                  👀 Predicciones
+                </button>
+              </div>
 
-              {participantes.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-5xl mb-3">📭</div>
-                  <p className="text-white/40">No hay predicciones registradas.</p>
-                </div>
-              ) : (
-                <div className="glass-card-dark rounded-3xl overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr style={{borderBottom:'1px solid rgba(244,167,185,0.08)'}}>
-                          <th className="text-left px-5 py-4 text-xs font-mono uppercase tracking-wider sticky left-0" style={{color:'rgba(244,167,185,0.4)',background:'rgba(15,32,22,0.9)'}}>Participante</th>
-                          <th className="px-4 py-4 text-xs font-mono uppercase tracking-wider" style={{color:'rgba(244,167,185,0.4)'}}>Pts</th>
-                          {PARTIDOS.slice(0,20).map(m => (
-                            <th key={m.id} className="px-2 py-4 text-xs font-mono" style={{color:'rgba(244,167,185,0.3)',minWidth:'52px'}}>
-                              {m.localFlag}{m.visitanteFlag}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {participantes.map((p,i) => (
-                          <tr key={p.nombre} style={{borderBottom:'1px solid rgba(244,167,185,0.05)',background: i%2===0 ? 'transparent' : 'rgba(244,167,185,0.02)'}}>
-                            <td className="px-5 py-3 sticky left-0 font-semibold text-white" style={{background: i%2===0 ? 'rgba(15,32,22,0.85)' : 'rgba(17,28,21,0.85)'}}>
-                              {i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : `${i+1}. `}{p.nombre}
-                            </td>
-                            <td className="px-4 py-3 text-center font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts}</td>
-                            {PARTIDOS.slice(0,20).map(m => {
-                              const pred = p.preds[m.id]
-                              const res = resultados[m.id]
-                              const correct = pred && res && pred === res
-                              return (
-                                <td key={m.id} className="px-2 py-3 text-center font-mono text-xs">
-                                  <span style={{
-                                    color: correct ? '#F4A7B9' : pred ? 'rgba(240,240,238,0.4)' : 'rgba(244,167,185,0.15)',
-                                    fontFamily:"'Barlow Condensed',sans-serif",
-                                    fontSize:'0.95rem',
-                                    fontWeight: correct ? '700' : '400'
-                                  }}>{pred || '–'}</span>
-                                </td>
-                              )
-                            })}
-                          </tr>
+              {tab === 'predicciones' && <VistaDestapada predsPorPartido={predsPorPartido} />}
+
+              {tab === 'puntos' && (
+                <>
+                  {recentPts.length > 0 && (
+                    <div className="max-w-xl mx-auto mb-8">
+                      <div className="glass-card rounded-2xl p-5" style={{border:'1px solid rgba(244,167,185,0.15)'}}>
+                        <p className="text-xs font-mono uppercase tracking-widest mb-3" style={{color:'rgba(244,167,185,0.5)'}}>🔥 Lideran la quiniela</p>
+                        {recentPts.map((p,i) => (
+                          <div key={p.nombre} className="flex items-center justify-between py-2" style={{borderTop: i>0 ? '1px solid rgba(244,167,185,0.06)' : 'none'}}>
+                            <span className="font-semibold text-white">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {nombreCorto(p.nombre)}</span>
+                            <span className="font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts} pts</span>
+                          </div>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  {PARTIDOS.length > 20 && <p className="text-center text-xs py-3" style={{color:'rgba(244,167,185,0.25)'}}>Mostrando primeros 20 partidos · Todos los puntos están calculados</p>}
-                </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {participantes.length === 0 ? (
+                    <div className="text-center py-12">
+                      <div className="text-5xl mb-3">📭</div>
+                      <p className="text-white/40">No hay predicciones registradas.</p>
+                    </div>
+                  ) : (
+                    <div className="glass-card-dark rounded-3xl overflow-hidden">
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr style={{borderBottom:'1px solid rgba(244,167,185,0.08)'}}>
+                              <th className="text-left px-5 py-4 text-xs font-mono uppercase tracking-wider sticky left-0" style={{color:'rgba(244,167,185,0.4)',background:'rgba(15,32,22,0.9)'}}>Participante</th>
+                              <th className="px-4 py-4 text-xs font-mono uppercase tracking-wider" style={{color:'rgba(244,167,185,0.4)'}}>Pts</th>
+                              {PARTIDOS.slice(0,20).map(m => (
+                                <th key={m.id} className="px-2 py-4 text-xs font-mono" style={{color:'rgba(244,167,185,0.3)',minWidth:'52px'}}>
+                                  {m.localFlag}{m.visitanteFlag}
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {participantes.map((p,i) => (
+                              <tr key={p.nombre} style={{borderBottom:'1px solid rgba(244,167,185,0.05)',background: i%2===0 ? 'transparent' : 'rgba(244,167,185,0.02)'}}>
+                                <td className="px-5 py-3 sticky left-0 font-semibold text-white" style={{background: i%2===0 ? 'rgba(15,32,22,0.85)' : 'rgba(17,28,21,0.85)'}}>
+                                  {i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : `${i+1}. `}{nombreCorto(p.nombre)}
+                                </td>
+                                <td className="px-4 py-3 text-center font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts}</td>
+                                {PARTIDOS.slice(0,20).map(m => {
+                                  const pred = p.preds[m.id]
+                                  const res = resultados[m.id]
+                                  const correct = pred && res && pred === res
+                                  return (
+                                    <td key={m.id} className="px-2 py-3 text-center font-mono text-xs">
+                                      <span style={{
+                                        color: correct ? '#F4A7B9' : pred ? 'rgba(240,240,238,0.4)' : 'rgba(244,167,185,0.15)',
+                                        fontFamily:"'Barlow Condensed',sans-serif",
+                                        fontSize:'0.95rem',
+                                        fontWeight: correct ? '700' : '400'
+                                      }}>{pred || '–'}</span>
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {PARTIDOS.length > 20 && <p className="text-center text-xs py-3" style={{color:'rgba(244,167,185,0.25)'}}>Mostrando primeros 20 partidos · Todos los puntos están calculados</p>}
+                    </div>
+                  )}
+                </>
               )}
             </>
           )}
