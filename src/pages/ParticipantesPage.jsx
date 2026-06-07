@@ -8,7 +8,6 @@ export default function ParticipantesPage() {
   const isOpen = new Date() < FECHA_CIERRE
 
   const load = useCallback(async () => {
-    // Trae los perfiles y el conteo de predicciones (desde la vista que ve los de todos)
     const [{ data: profs }, { data: conteos }] = await Promise.all([
       supabase.from('profiles').select('id, nombre').order('nombre'),
       supabase.from('conteo_predicciones').select('user_id, total')
@@ -27,7 +26,11 @@ export default function ParticipantesPage() {
     load()
     const onVisible = () => { if (document.visibilityState === 'visible') load() }
     document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
+    const intervalo = setInterval(load, 30000)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      clearInterval(intervalo)
+    }
   }, [load])
 
   if (loading) return (
