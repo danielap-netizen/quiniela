@@ -7,6 +7,7 @@ import MisPrediccionesPage from './pages/MisPrediccionesPage'
 import TablaPublicaPage from './pages/TablaPublicaPage'
 import PartidosPage from './pages/PartidosPage'
 import AdminPage from './pages/AdminPage'
+import ParticipantesPage from './pages/ParticipantesPage'
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <Loader />
@@ -29,7 +30,6 @@ function Loader() {
     </div>
   )
 }
-
 export default function App() {
   return (
     <AuthProvider>
@@ -41,8 +41,9 @@ export default function App() {
           <Route path="/mis-predicciones" element={<PrivateRoute><Layout><MisPrediccionesPage /></Layout></PrivateRoute>} />
           <Route path="/tabla" element={<Layout><TablaPublicaPage /></Layout>} />
           <Route path="/partidos" element={<Layout><PartidosPage /></Layout>} />
-                    <Route path="/admin" element={<PrivateRoute><Layout><AdminPage /></Layout></PrivateRoute>} />
- <Route path="*" element={<Navigate to="/tabla" replace />} />       
+          <Route path="/participantes" element={<Layout><ParticipantesPage /></Layout>} />
+          <Route path="/admin" element={<PrivateRoute><Layout><AdminPage /></Layout></PrivateRoute>} />
+          <Route path="*" element={<Navigate to="/tabla" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
