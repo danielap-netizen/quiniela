@@ -80,9 +80,11 @@ export default function AdminPage() {
   const { user } = useAuth()
   const [resultados, setResultados] = useState({})
   const [participantes, setParticipantes] = useState([])
+  const [conteos, setConteos] = useState({})
   const [loading, setLoading] = useState(true)
   const [grupoActivo, setGrupoActivo] = useState('A')
   const [tab, setTab] = useState('resultados')
+  const [descargando, setDescargando] = useState(false)
 
   const esAdmin = user?.email === ADMIN_EMAIL
 
@@ -91,6 +93,8 @@ export default function AdminPage() {
     const map = {}; (res || []).forEach(r => { map[r.partido_id] = r }); setResultados(map)
     const { data: profs } = await supabase.from('profiles').select('*').order('nombre')
     setParticipantes(profs || [])
+    const { data: cnt } = await supabase.from('conteo_predicciones').select('user_id, total')
+    const cmap = {}; (cnt || []).forEach(c => { cmap[c.user_id] = c.total }); setConteos(cmap)
     setLoading(false)
   }, [])
 
@@ -116,6 +120,45 @@ export default function AdminPage() {
     setParticipantes(ps => ps.map(p => p.id === perfil.id ? { ...p, pago: nuevo } : p))
   }
 
+  const eliminarParticipante = async (perfil) => {
+    const ok = window.confirm(`¿Seguro que quieres eliminar a ${perfil.nombre || perfil.email}?\n\nEsto borrará también todas sus predicciones y NO se puede deshacer.`)
+    if (!ok) return
+    await supabase.from('predicciones').delete().eq('user_id', perfil.id)
+    await supabase.from('profiles').delete().eq('id', perfil.id)
+    setParticipantes(ps => ps.filter(p => p.id !== perfil.id))
+  }
+
+  const descargarCSV = async () => {
+    setDescargando(true)
+    try {
+      const [{ data: preds }, { data: profs }] = await Promise.all([
+        supabase.from('predicciones').select('user_id, partido_id, resultado'),
+        supabase.from('profiles').select('id, nombre, email')
+      ])
+      const nombreMap = {}; (profs || []).forEach(p => { nombreMap[p.id] = p.nombre || p.email || 'Participante' })
+      const byUser = {}
+      ;(preds || []).forEach(p => {
+        if (!byUser[p.user_id]) byUser[p.user_id] = {}
+        byUser[p.user_id][p.partido_id] = p.resultado
+      })
+      // Encabezado: Nombre + cada partido
+      const cols = ['Participante', ...PARTIDOS.map(p => `${p.id} ${p.local}-${p.visitante}`)]
+      const filas = [cols.join(',')]
+      Object.entries(byUser).forEach(([uid, ps]) => {
+        const fila = [nombreMap[uid] || 'Participante', ...PARTIDOS.map(p => ps[p.id] || '')]
+        filas.push(fila.map(c => `"${String(c).replace(/"/g,'""')}"`).join(','))
+      })
+      const csv = '\uFEFF' + filas.join('\r\n')
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `quiniela-respaldo-${new Date().toISOString().slice(0,10)}.csv`
+      document.body.appendChild(a); a.click(); document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } finally { setDescargando(false) }
+  }
+
   const partidosGrupo = PARTIDOS.filter(p => p.grupo === grupoActivo)
   const totalConResultado = PARTIDOS.filter(p => resultados[p.id]).length
 
@@ -139,7 +182,7 @@ export default function AdminPage() {
         <button onClick={() => setTab('pagos')}
           className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
           style={{background: tab==='pagos' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tab==='pagos' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
-          Pagos
+          Participantes
         </button>
       </div>
 
@@ -172,22 +215,45 @@ export default function AdminPage() {
       )}
 
       {tab === 'pagos' && (
-        <div className="glass-card rounded-2xl p-2">
-          {participantes.length === 0 && <p className="text-white/40 text-sm p-4">Aún no hay participantes registrados.</p>}
-          {participantes.map(p => (
-            <button key={p.id} onClick={() => togglePago(p)}
-              className="w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all hover:bg-white/5">
-              <span className="text-white font-medium">{p.nombre || p.email}</span>
-              <span className="text-sm font-semibold px-3 py-1 rounded-full"
-                style={{
-                  background: p.pago ? 'rgba(244,167,185,0.15)' : 'rgba(255,255,255,0.05)',
-                  color: p.pago ? '#F4A7B9' : 'rgba(255,255,255,0.3)'
-                }}>
-                {p.pago ? '✓ Pagó' : 'Sin pagar'}
-              </span>
-            </button>
-          ))}
-        </div>
+        <>
+          <button onClick={descargarCSV} disabled={descargando}
+            className="btn-secondary w-full text-center block py-3 mb-4 text-sm">
+            {descargando ? 'Generando...' : '⬇️ Descargar respaldo de predicciones (CSV)'}
+          </button>
+          <p className="text-xs mb-4" style={{color:'rgba(240,240,238,0.4)'}}>
+            El respaldo incluye todas las predicciones. Funciona completo después del cierre.
+          </p>
+
+          <div className="glass-card rounded-2xl p-2">
+            {participantes.length === 0 && <p className="text-white/40 text-sm p-4">Aún no hay participantes registrados.</p>}
+            {participantes.map(p => (
+              <div key={p.id} className="flex items-center justify-between px-4 py-3 rounded-xl">
+                <div className="flex flex-col">
+                  <span className="text-white font-medium">{p.nombre || p.email}</span>
+                  <span className="text-xs font-mono" style={{color:'rgba(240,240,238,0.4)'}}>
+                    {conteos[p.id] || 0}/{PARTIDOS.length} predicciones
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => togglePago(p)}
+                    className="text-sm font-semibold px-3 py-1 rounded-full transition-all"
+                    style={{
+                      background: p.pago ? 'rgba(244,167,185,0.15)' : 'rgba(255,255,255,0.05)',
+                      color: p.pago ? '#F4A7B9' : 'rgba(255,255,255,0.3)'
+                    }}>
+                    {p.pago ? '✓ Pagó' : 'Sin pagar'}
+                  </button>
+                  <button onClick={() => eliminarParticipante(p)}
+                    className="text-sm px-2 py-1 rounded-lg transition-all"
+                    style={{color:'rgba(255,120,120,0.7)'}}
+                    title="Eliminar participante">
+                    🗑️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
     </div>
   )
