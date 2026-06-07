@@ -8,13 +8,13 @@ export default function ParticipantesPage() {
   const isOpen = new Date() < FECHA_CIERRE
 
   const load = useCallback(async () => {
-    // Trae los perfiles y cuántas predicciones lleva cada uno
-    const [{ data: profs }, { data: preds }] = await Promise.all([
+    // Trae los perfiles y el conteo de predicciones (desde la vista que ve los de todos)
+    const [{ data: profs }, { data: conteos }] = await Promise.all([
       supabase.from('profiles').select('id, nombre').order('nombre'),
-      supabase.from('predicciones').select('user_id')
+      supabase.from('conteo_predicciones').select('user_id, total')
     ])
     const conteo = {}
-    ;(preds || []).forEach(p => { conteo[p.user_id] = (conteo[p.user_id] || 0) + 1 })
+    ;(conteos || []).forEach(c => { conteo[c.user_id] = c.total })
     const lista = (profs || []).map(p => ({
       nombre: p.nombre || 'Participante',
       hechas: conteo[p.id] || 0
