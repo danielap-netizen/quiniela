@@ -71,9 +71,11 @@ export default function TablaPublicaPage() {
     const onVisible = () => { if (document.visibilityState === 'visible') load() }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', load)
+    const intervalo = setInterval(load, 30000)
     return () => {
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('focus', load)
+      clearInterval(intervalo)
     }
   }, [load])
 
