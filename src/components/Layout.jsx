@@ -32,6 +32,7 @@ export default function Layout({ children }) {
   const navLinks = [
     { to: '/tabla', label: 'Inicio', icon: '🏆' },
     { to: '/partidos', label: 'Partidos', icon: '⚽' },
+    { to: '/participantes', label: 'Participantes', icon: '👥' },
     ...(user ? [{ to: '/mis-predicciones', label: 'Mis picks', icon: '✏️' }] : []),
   ]
 
@@ -97,7 +98,7 @@ export default function Layout({ children }) {
       <main className="relative z-10">{children}</main>
 
       <footer className="mt-16 py-8 text-center" style={{borderTop:'1px solid rgba(244,167,185,0.06)'}}>
-        <p className="text-white/20 text-xs font-mono">Mundial 2026 · Familia Pereyra Fernández · Predicciones cierran 11 jun · 14:00 CDT</p>
+        <p className="text-white/20 text-xs font-mono">Mundial 2026 · Familia Pereyra Fernández · Predicciones cierran 11 jun · 12:00 CDMX</p>
       </footer>
     </div>
   )
