@@ -83,9 +83,12 @@ export default function TablaPublicaPage() {
     <div className="max-w-5xl mx-auto px-4 py-8">
       <div className="text-center mb-8 animate-fade-in">
         <div className="text-5xl mb-4">🌍</div>
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-4 text-xs font-mono uppercase tracking-widest" style={{background:'rgba(244,167,185,0.08)',border:'1px solid rgba(244,167,185,0.15)',color:'rgba(244,167,185,0.7)'}}>
-          <span className="w-1.5 h-1.5 rounded-full inline-block animate-pulse" style={{background:'#F4A7B9'}}/>
-          {NOMBRE_TORNEO}
+        <div className="inline-flex flex-col items-center gap-0.5 px-5 py-2 rounded-2xl mb-4 text-xs font-mono uppercase tracking-widest" style={{background:'rgba(244,167,185,0.08)',border:'1px solid rgba(244,167,185,0.15)',color:'rgba(244,167,185,0.7)'}}>
+          <span className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full inline-block animate-pulse" style={{background:'#F4A7B9'}}/>
+            Mundial 2026
+          </span>
+          <span>Familia Pereyra Fernández</span>
         </div>
         <h1 className="font-bold leading-none text-white mb-3" style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'clamp(2.5rem,6vw,4rem)'}}>
           {isOpen ? 'Quiniela abierta' : 'Tabla de puntos'}
