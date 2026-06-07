@@ -11,10 +11,10 @@ export function descargarCalendario() {
     // iPhone/Mac: suscripción que se actualiza sola
     window.location.href = `webcal://${host}${path}`
   } else if (esAndroid) {
-    // Android: agregar vía Google Calendar (suscripción por URL)
-    const url = `https://${host}${path}`
+    // Android: agregar vía Google Calendar usando webcal en el parámetro
+    const webcalUrl = `webcal://${host}${path}`
     window.open(
-      `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(url)}`,
+      `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(webcalUrl)}`,
       '_blank'
     )
   } else {
