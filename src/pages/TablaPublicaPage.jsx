@@ -5,10 +5,45 @@ import { FECHA_CIERRE, PARTIDOS, GRUPOS } from '../lib/config'
 import { useAuth } from '../lib/auth'
 import { descargarCalendario } from '../lib/calendario'
 
-// Muestra máximo las primeras 2 palabras del nombre
 function nombreCorto(nombre) {
   const partes = String(nombre || 'Participante').trim().split(/\s+/)
   return partes.slice(0, 2).join(' ')
+}
+
+// Une nombres en texto natural: "A, B y C"
+function unirNombres(lista) {
+  const ns = lista.map(nombreCorto)
+  if (ns.length === 0) return ''
+  if (ns.length === 1) return ns[0]
+  if (ns.length === 2) return `${ns[0]} y ${ns[1]}`
+  return `${ns.slice(0, -1).join(', ')} y ${ns[ns.length - 1]}`
+}
+
+// Frase narradora según cuántos atinaron
+function fraseNarracion(p, res, aciertos, total) {
+  const esEmpate = res.resultado === 'E'
+  const ganador = res.resultado === 'L' ? p.local : res.resultado === 'V' ? p.visitante : null
+  let titulo
+  if (esEmpate) {
+    titulo = '¡Repartición de puntos! Terminó en empate. 🤝'
+  } else {
+    titulo = `¡Ganó ${ganador}! ⚽`
+  }
+  let sub
+  if (total === 0) {
+    sub = ''
+  } else if (aciertos === 0) {
+    sub = '¡Nadie lo vio venir! Cero aciertos en este. 😅'
+  } else if (aciertos === total) {
+    sub = '¡Toda la familia le atinó! 🎯'
+  } else if (aciertos <= total * 0.3) {
+    sub = 'Sorpresa para muchos 😮'
+  } else if (aciertos >= total * 0.7) {
+    sub = '¡La familia lo veía venir!'
+  } else {
+    sub = 'Estuvo dividido el pronóstico.'
+  }
+  return { titulo, sub }
 }
 
 function Countdown({ fechaCierre }) {
@@ -33,11 +68,10 @@ function Countdown({ fechaCierre }) {
   )
 }
 
-// Vista destapada: por cada partido, quién eligió L / E / V
+// Vista destapada (Predicciones): por cada partido, quién eligió L / E / V
 function VistaDestapada({ predsPorPartido }) {
   const [grupoActivo, setGrupoActivo] = useState('A')
   const partidosGrupo = PARTIDOS.filter(p => p.grupo === grupoActivo)
-
   return (
     <div className="max-w-xl mx-auto">
       <div className="flex flex-wrap gap-1.5 mb-6 justify-center">
@@ -53,7 +87,6 @@ function VistaDestapada({ predsPorPartido }) {
           </button>
         ))}
       </div>
-
       <div className="space-y-4">
         {partidosGrupo.map(p => {
           const votos = predsPorPartido[p.id] || { L: [], E: [], V: [] }
@@ -102,16 +135,96 @@ function VistaDestapada({ predsPorPartido }) {
   )
 }
 
+// Vista Resultados (etapa 2): partidos jugados, más recientes primero
+function VistaResultados({ resultados, predsPorPartido, totalJugadores }) {
+  const jugados = PARTIDOS
+    .filter(p => resultados[p.id] && resultados[p.id].resultado)
+    .map(p => ({ p, res: resultados[p.id] }))
+    .sort((a, b) => {
+      const ta = a.res.updated_at ? new Date(a.res.updated_at).getTime() : 0
+      const tb = b.res.updated_at ? new Date(b.res.updated_at).getTime() : 0
+      return tb - ta
+    })
+
+  const porJugar = PARTIDOS.length - jugados.length
+
+  return (
+    <div className="max-w-xl mx-auto">
+      <div className="flex justify-center gap-3 mb-6">
+        <div className="glass-card rounded-2xl px-5 py-3 text-center">
+          <div className="font-bold text-3xl text-white" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{jugados.length}</div>
+          <div className="text-[10px] uppercase tracking-wider font-mono" style={{color:'rgba(244,167,185,0.6)'}}>Jugados</div>
+        </div>
+        <div className="glass-card rounded-2xl px-5 py-3 text-center">
+          <div className="font-bold text-3xl text-white" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{porJugar}</div>
+          <div className="text-[10px] uppercase tracking-wider font-mono" style={{color:'rgba(240,240,238,0.4)'}}>Por jugar</div>
+        </div>
+      </div>
+
+      {jugados.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="text-5xl mb-3">⚽</div>
+          <p className="text-white/40">Aún no hay partidos jugados. ¡Pronto empieza la acción!</p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {jugados.map(({ p, res }) => {
+            const votos = predsPorPartido[p.id] || { L: [], E: [], V: [] }
+            const aciertan = votos[res.resultado] || []
+            const frase = fraseNarracion(p, res, aciertan.length, totalJugadores)
+            const gl = res.goles_local
+            const gv = res.goles_visitante
+            return (
+              <div key={p.id} className="glass-card rounded-2xl p-4" style={{background:'rgba(244,167,185,0.05)'}}>
+                <div className="text-center mb-1">
+                  <span className="text-[10px] font-mono uppercase tracking-wider" style={{color:'rgba(244,167,185,0.5)'}}>Grupo {p.grupo} · Final</span>
+                </div>
+                <div className="flex items-center justify-center gap-3 my-2">
+                  <div className="text-center flex-1">
+                    <div className="text-3xl">{p.localFlag}</div>
+                    <div className="text-white font-medium text-sm" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{p.local}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-bold text-3xl" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{gl != null ? gl : '?'}</span>
+                    <span className="text-white/30">-</span>
+                    <span className="text-white font-bold text-3xl" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{gv != null ? gv : '?'}</span>
+                  </div>
+                  <div className="text-center flex-1">
+                    <div className="text-3xl">{p.visitanteFlag}</div>
+                    <div className="text-white font-medium text-sm" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>{p.visitante}</div>
+                  </div>
+                </div>
+                <div className="text-center pt-1">
+                  <span className="inline-block text-xs px-3 py-1.5 rounded-full font-mono" style={{background:'rgba(244,167,185,0.15)', color:'#F8C5D3'}}>
+                    ✓ {aciertan.length} de {totalJugadores} le {aciertan.length === 1 ? 'atinó' : 'atinaron'}
+                  </span>
+                </div>
+                <p className="text-center text-sm mt-3 mb-0" style={{color:'rgba(255,255,255,0.6)', lineHeight:1.5}}>
+                  {frase.titulo}
+                  {frase.sub && <><br/>{frase.sub}</>}
+                  {aciertan.length > 0 && (
+                    <><br/><span style={{color:'#F8C5D3'}}>{unirNombres(aciertan)}</span> {aciertan.length === 1 ? 'cantó' : 'cantaron'} el resultado.</>
+                  )}
+                </p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function TablaPublicaPage() {
   const { user } = useAuth()
   const [participantes, setParticipantes] = useState([])
   const [predsPorPartido, setPredsPorPartido] = useState({})
   const [resultados, setResultados] = useState({})
   const [totalReg, setTotalReg] = useState(0)
+  const [totalJugadores, setTotalJugadores] = useState(0)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('puntos')
 
-  // Modo prueba: agregar ?preview=1 a la URL para ver la vista cerrada aunque esté abierta
   const preview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1'
   const isOpen = (new Date() < FECHA_CIERRE) && !preview
 
@@ -119,8 +232,8 @@ export default function TablaPublicaPage() {
     const { count } = await supabase.from('profiles').select('*',{count:'exact',head:true})
     setTotalReg(count || 0)
 
-    const { data: resData } = await supabase.from('resultados').select('partido_id, resultado')
-    const resMap = {}; (resData || []).forEach(r => { resMap[r.partido_id] = r.resultado }); setResultados(resMap)
+    const { data: resData } = await supabase.from('resultados').select('partido_id, resultado, goles_local, goles_visitante, updated_at')
+    const resMap = {}; (resData || []).forEach(r => { resMap[r.partido_id] = r }); setResultados(resMap)
 
     if (!isOpen) {
       const [{ data: predsData }, { data: profilesData }] = await Promise.all([
@@ -138,9 +251,10 @@ export default function TablaPublicaPage() {
         if (porPartido[p.partido_id][p.resultado]) porPartido[p.partido_id][p.resultado].push(nombre)
       })
       setPredsPorPartido(porPartido)
+      setTotalJugadores(Object.keys(byUser).length)
       const lista = Object.entries(byUser).map(([uid, preds]) => {
         let pts = 0
-        Object.entries(preds).forEach(([pid, pred]) => { if (resMap[pid] && resMap[pid] === pred) pts++ })
+        Object.entries(preds).forEach(([pid, pred]) => { if (resMap[pid] && resMap[pid].resultado === pred) pts++ })
         return { nombre: nombreMap[uid] || 'Participante', preds, pts }
       })
       lista.sort((a,b) => b.pts - a.pts)
@@ -242,18 +356,25 @@ export default function TablaPublicaPage() {
             </div>
           ) : (
             <>
-              <div className="flex gap-2 mb-6 justify-center">
+              <div className="flex flex-wrap gap-2 mb-6 justify-center">
                 <button onClick={() => setTab('puntos')}
-                  className="px-5 py-2 rounded-xl text-sm font-semibold transition-all"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
                   style={{background: tab==='puntos' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tab==='puntos' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
-                  🏆 Tabla de puntos
+                  🏆 Tabla
+                </button>
+                <button onClick={() => setTab('resultados')}
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+                  style={{background: tab==='resultados' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tab==='resultados' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
+                  ⚽ Resultados
                 </button>
                 <button onClick={() => setTab('predicciones')}
-                  className="px-5 py-2 rounded-xl text-sm font-semibold transition-all"
+                  className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
                   style={{background: tab==='predicciones' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tab==='predicciones' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
                   👀 Predicciones
                 </button>
               </div>
+
+              {tab === 'resultados' && <VistaResultados resultados={resultados} predsPorPartido={predsPorPartido} totalJugadores={totalJugadores} />}
 
               {tab === 'predicciones' && <VistaDestapada predsPorPartido={predsPorPartido} />}
 
@@ -302,7 +423,7 @@ export default function TablaPublicaPage() {
                                 <td className="px-4 py-3 text-center font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts}</td>
                                 {PARTIDOS.slice(0,20).map(m => {
                                   const pred = p.preds[m.id]
-                                  const res = resultados[m.id]
+                                  const res = resultados[m.id]?.resultado
                                   const correct = pred && res && pred === res
                                   return (
                                     <td key={m.id} className="px-2 py-3 text-center font-mono text-xs">
