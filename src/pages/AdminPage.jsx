@@ -16,7 +16,6 @@ function PartidoAdmin({ partido, resultado, onSave }) {
   const [gl, setGl] = useState(resultado?.goles_local ?? '')
   const [gv, setGv] = useState(resultado?.goles_visitante ?? '')
   const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     setGl(resultado?.goles_local ?? '')
@@ -28,12 +27,17 @@ function PartidoAdmin({ partido, resultado, onSave }) {
     gv === '' ? null : Number(gv)
   )
 
+  // ¿Lo que está en pantalla es igual a lo ya guardado?
+  const guardadoGl = resultado?.goles_local ?? ''
+  const guardadoGv = resultado?.goles_visitante ?? ''
+  const yaGuardado = resultado != null && String(gl) === String(guardadoGl) && String(gv) === String(guardadoGv)
+  const hayCambios = (gl !== '' && gv !== '') && !yaGuardado
+
   const handleSave = async () => {
-    if (gl === '' || gv === '') return
+    if (!hayCambios) return
     setSaving(true)
     try {
       await onSave(partido.id, Number(gl), Number(gv), lev)
-      setSaved(true); setTimeout(() => setSaved(false), 1500)
     } finally { setSaving(false) }
   }
 
@@ -62,15 +66,15 @@ function PartidoAdmin({ partido, resultado, onSave }) {
           <span className="text-2xl ml-1">{partido.visitanteFlag}</span>
         </div>
       </div>
-      <button onClick={handleSave} disabled={gl === '' || gv === '' || saving}
+      <button onClick={handleSave} disabled={!hayCambios || saving}
         className="w-full mt-3 py-2 rounded-xl text-sm font-semibold transition-all"
         style={{
-          background: saved ? 'rgba(244,167,185,0.15)' : (gl !== '' && gv !== '' ? '#F4A7B9' : 'rgba(244,167,185,0.06)'),
-          color: saved ? '#F4A7B9' : (gl !== '' && gv !== '' ? '#111F18' : 'rgba(244,167,185,0.3)'),
-          cursor: (gl === '' || gv === '') ? 'not-allowed' : 'pointer',
+          background: saving ? 'rgba(244,167,185,0.4)' : hayCambios ? '#F4A7B9' : 'rgba(244,167,185,0.06)',
+          color: saving ? '#111F18' : hayCambios ? '#111F18' : (yaGuardado ? '#F4A7B9' : 'rgba(244,167,185,0.3)'),
+          cursor: (!hayCambios || saving) ? 'default' : 'pointer',
           fontFamily:"'Plus Jakarta Sans',sans-serif"
         }}>
-        {saving ? 'Guardando...' : saved ? '✓ Guardado' : 'Guardar resultado'}
+        {saving ? 'Guardando...' : hayCambios ? 'Guardar resultado' : yaGuardado ? '✓ Guardado' : 'Elige un marcador'}
       </button>
     </div>
   )
@@ -141,7 +145,6 @@ export default function AdminPage() {
         if (!byUser[p.user_id]) byUser[p.user_id] = {}
         byUser[p.user_id][p.partido_id] = p.resultado
       })
-      // Encabezado: Nombre + cada partido
       const cols = ['Participante', ...PARTIDOS.map(p => `${p.id} ${p.local}-${p.visitante}`)]
       const filas = [cols.join(',')]
       Object.entries(byUser).forEach(([uid, ps]) => {
