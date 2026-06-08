@@ -264,7 +264,7 @@ export default function TablaPublicaPage() {
   const [totalReg, setTotalReg] = useState(0)
   const [totalJugadores, setTotalJugadores] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('puntos')
+  const [tab, setTab] = useState(null)
 
   const preview = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('preview') === '1'
   const isOpen = (new Date() < FECHA_CIERRE) && !preview
@@ -299,6 +299,9 @@ export default function TablaPublicaPage() {
       })
       lista.sort((a,b) => b.pts - a.pts)
       setParticipantes(lista)
+      // Pestaña inicial: si no hay resultados aún, abrir en Predicciones; si ya hay, en Tabla
+      const hayRes = Object.values(resMap).some(r => r && r.resultado)
+      setTab(prev => prev || (hayRes ? 'puntos' : 'predicciones'))
     }
     setLoading(false)
   }, [isOpen])
@@ -319,6 +322,7 @@ export default function TablaPublicaPage() {
   const recentPts = participantes.filter(p => p.pts > 0).slice(0,3)
   const totalConResultado = PARTIDOS.filter(p => resultados[p.id] && resultados[p.id].resultado).length
   const torneoTerminado = totalConResultado >= PARTIDOS.length && participantes.length > 0
+  const tabActiva = tab || 'predicciones'
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -401,25 +405,25 @@ export default function TablaPublicaPage() {
               <div className="flex flex-wrap gap-2 mb-6 justify-center">
                 <button onClick={() => setTab('puntos')}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-                  style={{background: tab==='puntos' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tab==='puntos' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
+                  style={{background: tabActiva==='puntos' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tabActiva==='puntos' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
                   🏆 Tabla
                 </button>
                 <button onClick={() => setTab('resultados')}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-                  style={{background: tab==='resultados' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tab==='resultados' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
+                  style={{background: tabActiva==='resultados' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tabActiva==='resultados' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
                   ⚽ Resultados
                 </button>
                 <button onClick={() => setTab('predicciones')}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
-                  style={{background: tab==='predicciones' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tab==='predicciones' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
+                  style={{background: tabActiva==='predicciones' ? '#F4A7B9' : 'rgba(244,167,185,0.08)', color: tabActiva==='predicciones' ? '#111F18' : 'rgba(244,167,185,0.6)'}}>
                   👀 Predicciones
                 </button>
               </div>
 
-              {tab === 'resultados' && <VistaResultados resultados={resultados} predsPorPartido={predsPorPartido} totalJugadores={totalJugadores} />}
-              {tab === 'predicciones' && <VistaDestapada predsPorPartido={predsPorPartido} />}
+              {tabActiva === 'resultados' && <VistaResultados resultados={resultados} predsPorPartido={predsPorPartido} totalJugadores={totalJugadores} />}
+              {tabActiva === 'predicciones' && <VistaDestapada predsPorPartido={predsPorPartido} />}
 
-              {tab === 'puntos' && (
+              {tabActiva === 'puntos' && (
                 <>
                   {torneoTerminado && <Podio participantes={participantes} />}
 
