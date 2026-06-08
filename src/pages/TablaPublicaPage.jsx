@@ -54,9 +54,7 @@ function Countdown({ fechaCierre }) {
   )
 }
 
-// Banner del podio (etapa 3): aparece cuando están los 72 resultados
 function Podio({ participantes }) {
-  // Agrupa por puntaje, de mayor a menor, y toma los 3 mejores puntajes distintos
   const porPuntaje = {}
   participantes.forEach(p => {
     if (!porPuntaje[p.pts]) porPuntaje[p.pts] = []
@@ -76,13 +74,11 @@ function Podio({ participantes }) {
   const fondos = ['rgba(244,167,185,0.85)', 'rgba(244,167,185,0.25)', 'rgba(244,167,185,0.12)']
   const medallas = ['🥇', '🥈', '🥉']
 
-  // Frase de campeón
   const campeones = oro.nombres
   let frase
   if (campeones.length === 1) frase = <>🎉 <span style={{color:'#F8C5D3',fontWeight:600}}>{nombreCorto(campeones[0])}</span> se corona campeón con <span style={{color:'#F8C5D3'}}>{oro.pts} aciertos</span>.</>
   else frase = <>🎉 ¡<span style={{color:'#F8C5D3',fontWeight:600}}>{unirNombres(campeones)}</span> comparten el título con <span style={{color:'#F8C5D3'}}>{oro.pts} aciertos</span> cada uno!</>
 
-  // Orden visual: plata, oro, bronce (oro en medio)
   const orden = [{ e: plata, i: 1 }, { e: oro, i: 0 }, { e: bronce, i: 2 }]
 
   return (
@@ -476,3 +472,27 @@ export default function TablaPublicaPage() {
                                     <td key={m.id} className="px-2 py-3 text-center font-mono text-xs">
                                       <span style={{
                                         color: correct ? '#F4A7B9' : pred ? 'rgba(240,240,238,0.4)' : 'rgba(244,167,185,0.15)',
+                                        fontFamily:"'Barlow Condensed',sans-serif",
+                                        fontSize:'0.95rem',
+                                        fontWeight: correct ? '700' : '400'
+                                      }}>{pred || '–'}</span>
+                                    </td>
+                                  )
+                                })}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {PARTIDOS.length > 20 && <p className="text-center text-xs py-3" style={{color:'rgba(244,167,185,0.25)'}}>Mostrando primeros 20 partidos · Todos los puntos están calculados</p>}
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
