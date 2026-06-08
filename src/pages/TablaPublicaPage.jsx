@@ -10,7 +10,6 @@ function nombreCorto(nombre) {
   return partes.slice(0, 2).join(' ')
 }
 
-// Une nombres en texto natural: "A, B y C"
 function unirNombres(lista) {
   const ns = lista.map(nombreCorto)
   if (ns.length === 0) return ''
@@ -19,30 +18,17 @@ function unirNombres(lista) {
   return `${ns.slice(0, -1).join(', ')} y ${ns[ns.length - 1]}`
 }
 
-// Frase narradora según cuántos atinaron
 function fraseNarracion(p, res, aciertos, total) {
   const esEmpate = res.resultado === 'E'
   const ganador = res.resultado === 'L' ? p.local : res.resultado === 'V' ? p.visitante : null
-  let titulo
-  if (esEmpate) {
-    titulo = '¡Repartición de puntos! Terminó en empate. 🤝'
-  } else {
-    titulo = `¡Ganó ${ganador}! ⚽`
-  }
+  let titulo = esEmpate ? '¡Repartición de puntos! Terminó en empate. 🤝' : `¡Ganó ${ganador}! ⚽`
   let sub
-  if (total === 0) {
-    sub = ''
-  } else if (aciertos === 0) {
-    sub = '¡Nadie lo vio venir! Cero aciertos en este. 😅'
-  } else if (aciertos === total) {
-    sub = '¡Toda la familia le atinó! 🎯'
-  } else if (aciertos <= total * 0.3) {
-    sub = 'Sorpresa para muchos 😮'
-  } else if (aciertos >= total * 0.7) {
-    sub = '¡La familia lo veía venir!'
-  } else {
-    sub = 'Estuvo dividido el pronóstico.'
-  }
+  if (total === 0) sub = ''
+  else if (aciertos === 0) sub = '¡Nadie lo vio venir! Cero aciertos en este. 😅'
+  else if (aciertos === total) sub = '¡Toda la familia le atinó! 🎯'
+  else if (aciertos <= total * 0.3) sub = 'Sorpresa para muchos 😮'
+  else if (aciertos >= total * 0.7) sub = '¡La familia lo veía venir!'
+  else sub = 'Estuvo dividido el pronóstico.'
   return { titulo, sub }
 }
 
@@ -68,7 +54,71 @@ function Countdown({ fechaCierre }) {
   )
 }
 
-// Vista destapada (Predicciones): por cada partido, quién eligió L / E / V
+// Banner del podio (etapa 3): aparece cuando están los 72 resultados
+function Podio({ participantes }) {
+  // Agrupa por puntaje, de mayor a menor, y toma los 3 mejores puntajes distintos
+  const porPuntaje = {}
+  participantes.forEach(p => {
+    if (!porPuntaje[p.pts]) porPuntaje[p.pts] = []
+    porPuntaje[p.pts].push(p.nombre)
+  })
+  const puntajes = Object.keys(porPuntaje).map(Number).sort((a,b) => b - a).slice(0, 3)
+  if (puntajes.length === 0) return null
+
+  const escalon = (idx) => {
+    const pts = puntajes[idx]
+    if (pts == null) return null
+    return { pts, nombres: porPuntaje[pts] }
+  }
+  const oro = escalon(0), plata = escalon(1), bronce = escalon(2)
+
+  const alturas = ['96px', '60px', '46px']
+  const fondos = ['rgba(244,167,185,0.85)', 'rgba(244,167,185,0.25)', 'rgba(244,167,185,0.12)']
+  const medallas = ['🥇', '🥈', '🥉']
+
+  // Frase de campeón
+  const campeones = oro.nombres
+  let frase
+  if (campeones.length === 1) frase = <>🎉 <span style={{color:'#F8C5D3',fontWeight:600}}>{nombreCorto(campeones[0])}</span> se corona campeón con <span style={{color:'#F8C5D3'}}>{oro.pts} aciertos</span>.</>
+  else frase = <>🎉 ¡<span style={{color:'#F8C5D3',fontWeight:600}}>{unirNombres(campeones)}</span> comparten el título con <span style={{color:'#F8C5D3'}}>{oro.pts} aciertos</span> cada uno!</>
+
+  // Orden visual: plata, oro, bronce (oro en medio)
+  const orden = [{ e: plata, i: 1 }, { e: oro, i: 0 }, { e: bronce, i: 2 }]
+
+  return (
+    <div className="max-w-xl mx-auto mb-8">
+      <div className="glass-card rounded-3xl p-6" style={{border:'1px solid rgba(244,167,185,0.2)'}}>
+        <div className="text-center mb-5">
+          <div className="text-4xl">🏆</div>
+          <div className="text-2xl text-white font-bold" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>
+            {campeones.length > 1 ? '¡Empate en la cima!' : '¡Tenemos campeón!'}
+          </div>
+          <div className="text-xs font-mono" style={{color:'rgba(244,167,185,0.6)'}}>Fase de grupos · Mundial 2026</div>
+        </div>
+
+        <div className="flex items-end justify-center gap-2 mb-4">
+          {orden.map(({ e, i }) => e && (
+            <div key={i} className="flex-1 text-center">
+              <div className="text-2xl">{medallas[i]}</div>
+              <div className="text-white text-xs font-medium my-1 leading-tight" style={{fontFamily:"'Barlow Condensed',sans-serif"}}>
+                {e.nombres.map((n, k) => <div key={k}>{nombreCorto(n)}</div>)}
+              </div>
+              <div className="text-xs font-mono" style={{color:'#F8C5D3'}}>{e.pts} pts</div>
+              <div style={{background:fondos[i], borderRadius:'8px 8px 0 0', height:alturas[i], marginTop:6, display:'flex', alignItems:'flex-start', justifyContent:'center', paddingTop:8}}>
+                <span style={{color: i===0?'#111F18':'#fff', fontWeight: i===0?700:500, fontSize:i===0?'24px':'20px', fontFamily:"'Barlow Condensed',sans-serif"}}>{i+1}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="rounded-2xl p-4 text-center" style={{background:'rgba(244,167,185,0.06)'}}>
+          <p className="text-sm m-0" style={{color:'rgba(255,255,255,0.7)', lineHeight:1.6}}>{frase}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function VistaDestapada({ predsPorPartido }) {
   const [grupoActivo, setGrupoActivo] = useState('A')
   const partidosGrupo = PARTIDOS.filter(p => p.grupo === grupoActivo)
@@ -135,7 +185,6 @@ function VistaDestapada({ predsPorPartido }) {
   )
 }
 
-// Vista Resultados (etapa 2): partidos jugados, más recientes primero
 function VistaResultados({ resultados, predsPorPartido, totalJugadores }) {
   const jugados = PARTIDOS
     .filter(p => resultados[p.id] && resultados[p.id].resultado)
@@ -145,9 +194,7 @@ function VistaResultados({ resultados, predsPorPartido, totalJugadores }) {
       const tb = b.res.updated_at ? new Date(b.res.updated_at).getTime() : 0
       return tb - ta
     })
-
   const porJugar = PARTIDOS.length - jugados.length
-
   return (
     <div className="max-w-xl mx-auto">
       <div className="flex justify-center gap-3 mb-6">
@@ -160,7 +207,6 @@ function VistaResultados({ resultados, predsPorPartido, totalJugadores }) {
           <div className="text-[10px] uppercase tracking-wider font-mono" style={{color:'rgba(240,240,238,0.4)'}}>Por jugar</div>
         </div>
       </div>
-
       {jugados.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-5xl mb-3">⚽</div>
@@ -172,8 +218,7 @@ function VistaResultados({ resultados, predsPorPartido, totalJugadores }) {
             const votos = predsPorPartido[p.id] || { L: [], E: [], V: [] }
             const aciertan = votos[res.resultado] || []
             const frase = fraseNarracion(p, res, aciertan.length, totalJugadores)
-            const gl = res.goles_local
-            const gv = res.goles_visitante
+            const gl = res.goles_local, gv = res.goles_visitante
             return (
               <div key={p.id} className="glass-card rounded-2xl p-4" style={{background:'rgba(244,167,185,0.05)'}}>
                 <div className="text-center mb-1">
@@ -231,7 +276,6 @@ export default function TablaPublicaPage() {
   const load = useCallback(async () => {
     const { count } = await supabase.from('profiles').select('*',{count:'exact',head:true})
     setTotalReg(count || 0)
-
     const { data: resData } = await supabase.from('resultados').select('partido_id, resultado, goles_local, goles_visitante, updated_at')
     const resMap = {}; (resData || []).forEach(r => { resMap[r.partido_id] = r }); setResultados(resMap)
 
@@ -277,6 +321,8 @@ export default function TablaPublicaPage() {
   }, [load])
 
   const recentPts = participantes.filter(p => p.pts > 0).slice(0,3)
+  const totalConResultado = PARTIDOS.filter(p => resultados[p.id] && resultados[p.id].resultado).length
+  const torneoTerminado = totalConResultado >= PARTIDOS.length && participantes.length > 0
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
@@ -375,12 +421,13 @@ export default function TablaPublicaPage() {
               </div>
 
               {tab === 'resultados' && <VistaResultados resultados={resultados} predsPorPartido={predsPorPartido} totalJugadores={totalJugadores} />}
-
               {tab === 'predicciones' && <VistaDestapada predsPorPartido={predsPorPartido} />}
 
               {tab === 'puntos' && (
                 <>
-                  {recentPts.length > 0 && (
+                  {torneoTerminado && <Podio participantes={participantes} />}
+
+                  {!torneoTerminado && recentPts.length > 0 && (
                     <div className="max-w-xl mx-auto mb-8">
                       <div className="glass-card rounded-2xl p-5" style={{border:'1px solid rgba(244,167,185,0.15)'}}>
                         <p className="text-xs font-mono uppercase tracking-widest mb-3" style={{color:'rgba(244,167,185,0.5)'}}>🔥 Lideran la quiniela</p>
@@ -429,27 +476,3 @@ export default function TablaPublicaPage() {
                                     <td key={m.id} className="px-2 py-3 text-center font-mono text-xs">
                                       <span style={{
                                         color: correct ? '#F4A7B9' : pred ? 'rgba(240,240,238,0.4)' : 'rgba(244,167,185,0.15)',
-                                        fontFamily:"'Barlow Condensed',sans-serif",
-                                        fontSize:'0.95rem',
-                                        fontWeight: correct ? '700' : '400'
-                                      }}>{pred || '–'}</span>
-                                    </td>
-                                  )
-                                })}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                      {PARTIDOS.length > 20 && <p className="text-center text-xs py-3" style={{color:'rgba(244,167,185,0.25)'}}>Mostrando primeros 20 partidos · Todos los puntos están calculados</p>}
-                    </div>
-                  )}
-                </>
-              )}
-            </>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
