@@ -33,6 +33,16 @@ async function leerTodo(tabla, columnas) {
   return todas
 }
 
+// Baraja un arreglo al azar (Fisher-Yates)
+function barajar(arr) {
+  const a = arr.slice()
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 function fraseNarracion(p, res, aciertos, total) {
   const esEmpate = res.resultado === 'E'
   const ganador = res.resultado === 'L' ? p.local : res.resultado === 'V' ? p.visitante : null
@@ -312,8 +322,10 @@ export default function TablaPublicaPage() {
         Object.entries(preds).forEach(([pid, pred]) => { if (resMap[pid] && resMap[pid].resultado === pred) pts++ })
         return { nombre: nombreMap[uid] || 'Participante', preds, pts }
       })
-      lista.sort((a,b) => b.pts - a.pts)
-      setParticipantes(lista)
+      // Desempate al azar: baraja primero, luego ordena por puntos (los empatados quedan revueltos)
+      const barajada = barajar(lista)
+      barajada.sort((a,b) => b.pts - a.pts)
+      setParticipantes(barajada)
       const hayRes = Object.values(resMap).some(r => r && r.resultado)
       setTab(prev => prev || (hayRes ? 'puntos' : 'predicciones'))
     }
