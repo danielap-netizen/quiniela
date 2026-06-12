@@ -18,6 +18,21 @@ function unirNombres(lista) {
   return `${ns.slice(0, -1).join(', ')} y ${ns[ns.length - 1]}`
 }
 
+// Lee TODAS las filas de una tabla en bloques de 1000 (Supabase limita a 1000 por consulta)
+async function leerTodo(tabla, columnas) {
+  let todas = []
+  let desde = 0
+  const tam = 1000
+  while (true) {
+    const { data, error } = await supabase.from(tabla).select(columnas).range(desde, desde + tam - 1)
+    if (error || !data || data.length === 0) break
+    todas = todas.concat(data)
+    if (data.length < tam) break
+    desde += tam
+  }
+  return todas
+}
+
 function fraseNarracion(p, res, aciertos, total) {
   const esEmpate = res.resultado === 'E'
   const ganador = res.resultado === 'L' ? p.local : res.resultado === 'V' ? p.visitante : null
@@ -276,9 +291,9 @@ export default function TablaPublicaPage() {
     const resMap = {}; (resData || []).forEach(r => { resMap[r.partido_id] = r }); setResultados(resMap)
 
     if (!isOpen) {
-      const [{ data: predsData }, { data: profilesData }] = await Promise.all([
-        supabase.from('predicciones').select('user_id, partido_id, resultado'),
-        supabase.from('profiles').select('id, nombre')
+      const [predsData, profilesData] = await Promise.all([
+        leerTodo('predicciones', 'user_id, partido_id, resultado'),
+        leerTodo('profiles', 'id, nombre')
       ])
       const nombreMap = {}; (profilesData || []).forEach(p => { nombreMap[p.id] = p.nombre })
       const byUser = {}
@@ -299,7 +314,6 @@ export default function TablaPublicaPage() {
       })
       lista.sort((a,b) => b.pts - a.pts)
       setParticipantes(lista)
-      // Pestaña inicial: si no hay resultados aún, abrir en Predicciones; si ya hay, en Tabla
       const hayRes = Object.values(resMap).some(r => r && r.resultado)
       setTab(prev => prev || (hayRes ? 'puntos' : 'predicciones'))
     }
