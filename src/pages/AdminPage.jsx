@@ -4,6 +4,28 @@ import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
 import { PARTIDOS, GRUPOS, ADMIN_EMAIL } from '../lib/config'
 
+// Pone cada nombre tipo "Gabriela Espinosa"
+function nombreBonito(nombre) {
+  return String(nombre || 'Participante').trim().split(/\s+/)
+    .map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+    .join(' ')
+}
+
+// Lee TODAS las filas de una tabla en bloques de 1000
+async function leerTodo(tabla, columnas) {
+  let todas = []
+  let desde = 0
+  const tam = 1000
+  while (true) {
+    const { data, error } = await supabase.from(tabla).select(columnas).range(desde, desde + tam - 1)
+    if (error || !data || data.length === 0) break
+    todas = todas.concat(data)
+    if (data.length < tam) break
+    desde += tam
+  }
+  return todas
+}
+
 // Deduce L/E/V a partir del marcador
 function deducirLEV(gl, gv) {
   if (gl == null || gv == null) return null
@@ -27,7 +49,6 @@ function PartidoAdmin({ partido, resultado, onSave }) {
     gv === '' ? null : Number(gv)
   )
 
-  // ¿Lo que está en pantalla es igual a lo ya guardado?
   const guardadoGl = resultado?.goles_local ?? ''
   const guardadoGv = resultado?.goles_visitante ?? ''
   const yaGuardado = resultado != null && String(gl) === String(guardadoGl) && String(gv) === String(guardadoGv)
@@ -95,8 +116,9 @@ export default function AdminPage() {
   const fetchData = useCallback(async () => {
     const { data: res } = await supabase.from('resultados').select('*')
     const map = {}; (res || []).forEach(r => { map[r.partido_id] = r }); setResultados(map)
-    const { data: profs } = await supabase.from('profiles').select('*').order('nombre')
-    setParticipantes(profs || [])
+    const profs = await leerTodo('profiles', '*')
+    profs.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || '')))
+    setParticipantes(profs)
     const { data: cnt } = await supabase.from('conteo_predicciones').select('user_id, total')
     const cmap = {}; (cnt || []).forEach(c => { cmap[c.user_id] = c.total }); setConteos(cmap)
     setLoading(false)
@@ -125,7 +147,7 @@ export default function AdminPage() {
   }
 
   const eliminarParticipante = async (perfil) => {
-    const ok = window.confirm(`¿Seguro que quieres eliminar a ${perfil.nombre || perfil.email}?\n\nEsto borrará también todas sus predicciones y NO se puede deshacer.`)
+    const ok = window.confirm(`¿Seguro que quieres eliminar a ${nombreBonito(perfil.nombre || perfil.email)}?\n\nEsto borrará también todas sus predicciones y NO se puede deshacer.`)
     if (!ok) return
     await supabase.from('predicciones').delete().eq('user_id', perfil.id)
     await supabase.from('profiles').delete().eq('id', perfil.id)
@@ -135,11 +157,11 @@ export default function AdminPage() {
   const descargarCSV = async () => {
     setDescargando(true)
     try {
-      const [{ data: preds }, { data: profs }] = await Promise.all([
-        supabase.from('predicciones').select('user_id, partido_id, resultado'),
-        supabase.from('profiles').select('id, nombre, email')
+      const [preds, profs] = await Promise.all([
+        leerTodo('predicciones', 'user_id, partido_id, resultado'),
+        leerTodo('profiles', 'id, nombre, email')
       ])
-      const nombreMap = {}; (profs || []).forEach(p => { nombreMap[p.id] = p.nombre || p.email || 'Participante' })
+      const nombreMap = {}; (profs || []).forEach(p => { nombreMap[p.id] = nombreBonito(p.nombre || p.email || 'Participante') })
       const byUser = {}
       ;(preds || []).forEach(p => {
         if (!byUser[p.user_id]) byUser[p.user_id] = {}
@@ -232,7 +254,7 @@ export default function AdminPage() {
             {participantes.map(p => (
               <div key={p.id} className="flex items-center justify-between px-4 py-3 rounded-xl">
                 <div className="flex flex-col">
-                  <span className="text-white font-medium">{p.nombre || p.email}</span>
+                  <span className="text-white font-medium">{nombreBonito(p.nombre || p.email)}</span>
                   <span className="text-xs font-mono" style={{color:'rgba(240,240,238,0.4)'}}>
                     {conteos[p.id] || 0}/{PARTIDOS.length} predicciones
                   </span>
