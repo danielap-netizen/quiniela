@@ -202,6 +202,10 @@ function VistaDestapada({ predsPorPartido }) {
           )
         })}
       </div>
+    </div>
+  )
+}
+
 function VistaResultados({ resultados, predsPorPartido, totalJugadores }) {
   const jugados = PARTIDOS
     .filter(p => resultados[p.id] && resultados[p.id].resultado)
@@ -340,6 +344,10 @@ export default function TablaPublicaPage() {
     }
   }, [load])
 
+  const puntajesOrdenados = [...new Set(participantes.map(p => p.pts))].sort((a,b) => b - a)
+  const lugarDe = (pts) => puntajesOrdenados.indexOf(pts) + 1
+  const medallaDe = (pts) => { const l = lugarDe(pts); return l === 1 ? '🥇' : l === 2 ? '🥈' : l === 3 ? '🥉' : null }
+
   const recentPts = participantes.filter(p => p.pts > 0).slice(0,3)
   const totalConResultado = PARTIDOS.filter(p => resultados[p.id] && resultados[p.id].resultado).length
   const torneoTerminado = totalConResultado >= PARTIDOS.length && participantes.length > 0
@@ -454,7 +462,7 @@ export default function TablaPublicaPage() {
                         <p className="text-xs font-mono uppercase tracking-widest mb-3" style={{color:'rgba(244,167,185,0.5)'}}>🔥 Lideran la quiniela</p>
                         {recentPts.map((p,i) => (
                           <div key={p.nombre} className="flex items-center justify-between py-2" style={{borderTop: i>0 ? '1px solid rgba(244,167,185,0.06)' : 'none'}}>
-                            <span className="font-semibold text-white">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} {nombreCorto(p.nombre)}</span>
+                            <span className="font-semibold text-white">{medallaDe(p.pts) ? medallaDe(p.pts) + ' ' : ''}{nombreCorto(p.nombre)}</span>
                             <span className="font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts} pts</span>
                           </div>
                         ))}
@@ -486,7 +494,7 @@ export default function TablaPublicaPage() {
                             {participantes.map((p,i) => (
                               <tr key={p.nombre} style={{borderBottom:'1px solid rgba(244,167,185,0.05)',background: i%2===0 ? 'transparent' : 'rgba(244,167,185,0.02)'}}>
                                 <td className="px-5 py-3 sticky left-0 font-semibold text-white" style={{background: i%2===0 ? 'rgba(15,32,22,0.85)' : 'rgba(17,28,21,0.85)'}}>
-                                  {i === 0 ? '🥇 ' : i === 1 ? '🥈 ' : i === 2 ? '🥉 ' : `${i+1}. `}{nombreCorto(p.nombre)}
+                                  {medallaDe(p.pts) ? medallaDe(p.pts) + ' ' : `${lugarDe(p.pts)}. `}{nombreCorto(p.nombre)}
                                 </td>
                                 <td className="px-4 py-3 text-center font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts}</td>
                                 {PARTIDOS.slice(0,20).map(m => {
@@ -518,9 +526,6 @@ export default function TablaPublicaPage() {
           )}
         </>
       )}
-    </div>
-  )
-}
     </div>
   )
 }
