@@ -372,7 +372,7 @@ export default function TablaPublicaPage() {
         <p className="text-white/40 max-w-lg mx-auto">
           {isOpen
             ? `¡Ya hay ${totalReg} ${totalReg === 1 ? 'participante' : 'participantes'}! Registra tus picks antes del cierre.`
-            : '¡A ver cómo le fue a cada quien!'}
+            : 'El jueguito se nos está acabando...'}
         </p>
         {!isOpen && (new Date() < fechaUltimoPartido) && (
           <div className="mt-6">
