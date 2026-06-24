@@ -348,6 +348,8 @@ export default function TablaPublicaPage() {
   const lugarDe = (pts) => puntajesOrdenados.indexOf(pts) + 1
   const medallaDe = (pts) => { const l = lugarDe(pts); return l === 1 ? '🥇' : l === 2 ? '🥈' : l === 3 ? '🥉' : null }
 
+  const fechaUltimoPartido = new Date(Math.max(...PARTIDOS.map(p => new Date(p.fecha).getTime())))
+
   const recentPts = participantes.filter(p => p.pts > 0).slice(0,3)
   const totalConResultado = PARTIDOS.filter(p => resultados[p.id] && resultados[p.id].resultado).length
   const torneoTerminado = totalConResultado >= PARTIDOS.length && participantes.length > 0
@@ -365,13 +367,19 @@ export default function TablaPublicaPage() {
           <span>Familia Pereyra Fernández</span>
         </div>
         <h1 className="font-bold leading-none text-white mb-3" style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:'clamp(2.5rem,6vw,4rem)'}}>
-          {isOpen ? 'Quiniela abierta' : 'Quiniela cerrada'}
+          {isOpen ? 'Quiniela abierta' : 'Quiniela'}
         </h1>
         <p className="text-white/40 max-w-lg mx-auto">
           {isOpen
             ? `¡Ya hay ${totalReg} ${totalReg === 1 ? 'participante' : 'participantes'}! Registra tus picks antes del cierre.`
             : '¡A ver cómo le fue a cada quien!'}
         </p>
+        {!isOpen && (new Date() < fechaUltimoPartido) && (
+          <div className="mt-6">
+            <p className="text-xs font-mono uppercase tracking-widest mb-1" style={{color:'rgba(244,167,185,0.5)'}}>Termina la fase de grupos en</p>
+            <Countdown fechaCierre={fechaUltimoPartido}/>
+          </div>
+        )}
       </div>
 
       {isOpen && (
