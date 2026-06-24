@@ -494,7 +494,7 @@ export default function TablaPublicaPage() {
                             {participantes.map((p,i) => (
                               <tr key={p.nombre} style={{borderBottom:'1px solid rgba(244,167,185,0.05)',background: i%2===0 ? 'transparent' : 'rgba(244,167,185,0.02)'}}>
                                 <td className="px-5 py-3 sticky left-0 font-semibold text-white" style={{background: i%2===0 ? 'rgba(15,32,22,0.85)' : 'rgba(17,28,21,0.85)'}}>
-                                  {medallaDe(p.pts) ? medallaDe(p.pts) + ' ' : `${lugarDe(p.pts)}. `}{nombreCorto(p.nombre)}
+                                  {lugarDe(p.pts)}. {medallaDe(p.pts) ? medallaDe(p.pts) + ' ' : ''}{nombreCorto(p.nombre)}
                                 </td>
                                 <td className="px-4 py-3 text-center font-bold text-lg" style={{fontFamily:"'Barlow Condensed',sans-serif",color:'#F4A7B9'}}>{p.pts}</td>
                                 {PARTIDOS.slice(0,20).map(m => {
