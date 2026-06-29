@@ -192,7 +192,7 @@ export default function TablaEliminatoriasPage() {
     })
 
     // Mostrar a quienes hicieron AL MENOS 1 prediccion de eliminatorias
-    const participantesEliminatorias = tablaCompleta.filter((p) => p.hechas > 0)
+    const participantesEliminatorias = tablaCompleta.filter((p) => p.hechas > 1)
 
     participantesEliminatorias.sort((a, b) => {
       if (b.puntos !== a.puntos) return b.puntos - a.puntos
