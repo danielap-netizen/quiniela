@@ -68,7 +68,7 @@ export default function TablaEliminatoriasPage() {
       predsPorUsuario[p.user_id][p.partido_id] = p.resultado
     })
 
-    const tabla = profiles.map((profile) => {
+    const tablaCompleta = profiles.map((profile) => {
       const preds = predsPorUsuario[profile.id] || {}
 
       let puntos = 0
@@ -93,15 +93,18 @@ export default function TablaEliminatoriasPage() {
         puntos,
         hechas,
         faltantes,
+        completo: faltantes === 0,
       }
     })
 
-    tabla.sort((a, b) => {
+    const soloCompletos = tablaCompleta.filter((p) => p.completo)
+
+    soloCompletos.sort((a, b) => {
       if (b.puntos !== a.puntos) return b.puntos - a.puntos
-      return b.hechas - a.hechas
+      return a.nombre.localeCompare(b.nombre)
     })
 
-    setParticipantes(tabla)
+    setParticipantes(soloCompletos)
     setResultados(resMap)
     setLoading(false)
   }, [])
@@ -135,7 +138,7 @@ export default function TablaEliminatoriasPage() {
         </h1>
 
         <p className="text-white/55 mt-2">
-          Esta tabla es independiente de la fase de grupos. Cada acierto vale 1 punto.
+          Esta tabla es independiente de la fase de grupos. Solo aparecen quienes ya completaron sus predicciones de octavos.
         </p>
       </div>
 
@@ -150,60 +153,76 @@ export default function TablaEliminatoriasPage() {
           Resultados cargados: {partidosConResultado}/{ELIMINATORIAS.length}
         </p>
         <p className="text-white/45 text-sm mt-1">
-          Por ahora esta tabla calcula octavos. Después aquí mismo sumaremos cuartos, semis y final.
+          Cada acierto vale 1 punto. Por ahora esta tabla calcula octavos.
         </p>
       </div>
 
-      <div className="space-y-3">
-        {participantes.map((p, index) => (
-          <div
-            key={p.id}
-            className="rounded-2xl p-4 flex items-center justify-between gap-4"
-            style={{
-              background:
-                index === 0
-                  ? 'rgba(244,167,185,0.14)'
-                  : 'rgba(255,255,255,0.04)',
-              border:
-                index === 0
-                  ? '1px solid rgba(244,167,185,0.35)'
-                  : '1px solid rgba(255,255,255,0.08)',
-            }}
-          >
-            <div className="flex items-center gap-4 min-w-0">
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center font-black"
-                style={{
-                  background: index === 0 ? '#F4A7B9' : 'rgba(244,167,185,0.12)',
-                  color: index === 0 ? '#111F18' : '#F4A7B9',
-                }}
-              >
-                {index + 1}
+      {participantes.length === 0 ? (
+        <div
+          className="rounded-2xl p-6"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <p className="text-white font-bold text-lg">
+            Todavía no hay participantes completos en octavos.
+          </p>
+          <p className="text-white/45 text-sm mt-2">
+            En esta tabla solo aparecerán quienes hayan guardado sus 8 predicciones de octavos.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {participantes.map((p, index) => (
+            <div
+              key={p.id}
+              className="rounded-2xl p-4 flex items-center justify-between gap-4"
+              style={{
+                background:
+                  index === 0
+                    ? 'rgba(244,167,185,0.14)'
+                    : 'rgba(255,255,255,0.04)',
+                border:
+                  index === 0
+                    ? '1px solid rgba(244,167,185,0.35)'
+                    : '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center font-black"
+                  style={{
+                    background: index === 0 ? '#F4A7B9' : 'rgba(244,167,185,0.12)',
+                    color: index === 0 ? '#111F18' : '#F4A7B9',
+                  }}
+                >
+                  {index + 1}
+                </div>
+
+                <div className="min-w-0">
+                  <p className="text-white font-bold truncate">
+                    {nombreCorto(p.nombre)}
+                  </p>
+
+                  <p className="text-white/40 text-sm">
+                    8/8 predicciones hechas · completo
+                  </p>
+                </div>
               </div>
 
-              <div className="min-w-0">
-                <p className="text-white font-bold truncate">
-                  {nombreCorto(p.nombre)}
+              <div className="text-right">
+                <p className="text-[#F4A7B9] text-2xl font-black">
+                  {p.puntos}
                 </p>
-
-                <p className="text-white/40 text-sm">
-                  {p.hechas}/{ELIMINATORIAS.length} predicciones hechas
-                  {p.faltantes > 0 ? ` · faltan ${p.faltantes}` : ' · completo'}
+                <p className="text-white/35 text-xs uppercase tracking-widest">
+                  puntos
                 </p>
               </div>
             </div>
-
-            <div className="text-right">
-              <p className="text-[#F4A7B9] text-2xl font-black">
-                {p.puntos}
-              </p>
-              <p className="text-white/35 text-xs uppercase tracking-widest">
-                puntos
-              </p>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
