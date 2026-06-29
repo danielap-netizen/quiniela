@@ -8,6 +8,9 @@ import TablaPublicaPage from './pages/TablaPublicaPage'
 import PartidosPage from './pages/PartidosPage'
 import AdminPage from './pages/AdminPage'
 import ParticipantesPage from './pages/ParticipantesPage'
+import OctavosPage from './pages/OctavosPage'
+import AdminOctavosPage from './pages/AdminOctavosPage'
+import TablaEliminatoriasPage from './pages/TablaEliminatoriasPage'
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
   if (loading) return <Loader />
