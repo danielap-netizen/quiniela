@@ -1,29 +1,92 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Navigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
-import { OCTAVOS, ADMIN_EMAIL } from '../lib/config'
+import { ADMIN_EMAIL, OCTAVOS } from '../lib/config'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
-function OctavoAdminCard({ partido, resultado, onSave }) {
-  const [gl, setGl] = useState(resultado?.goles_local ?? '')
-  const [gv, setGv] = useState(resultado?.goles_visitante ?? '')
-  const [winner, setWinner] = useState(resultado?.resultado ?? '')
+const DEFINICIONES = [
+  { value: 'REGULAR', label: 'Tiempo regular' },
+  { value: 'EXTRAS', label: 'Tiempos extras' },
+  { value: 'PENALES', label: 'Penales' },
+]
+
+function formatFecha(iso) {
+  return format(new Date(iso), "EEE d MMM · HH:mm 'hrs'", { locale: es })
+}
+
+function getLabelDefinicion(value) {
+  return DEFINICIONES.find((d) => d.value === value)?.label || ''
+}
+
+function AdminPartidoCard({ partido, resultadoGuardado, onSave }) {
+  const resultadoInicial =
+    resultadoGuardado?.resultado ||
+    partido.resultadoOficial ||
+    ''
+
+  const definicionInicial =
+    resultadoGuardado?.definicion ||
+    partido.definicionOficial ||
+    (partido.resultadoOficial ? 'REGULAR' : '')
+
+  const golesLocalInicial =
+    resultadoGuardado?.goles_local ??
+    partido.golesLocalOficial ??
+    ''
+
+  const golesVisitanteInicial =
+    resultadoGuardado?.goles_visitante ??
+    partido.golesVisitanteOficial ??
+    ''
+
+  const [resultado, setResultado] = useState(resultadoInicial)
+  const [definicion, setDefinicion] = useState(definicionInicial)
+  const [golesLocal, setGolesLocal] = useState(golesLocalInicial)
+  const [golesVisitante, setGolesVisitante] = useState(golesVisitanteInicial)
   const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    setGl(resultado?.goles_local ?? '')
-    setGv(resultado?.goles_visitante ?? '')
-    setWinner(resultado?.resultado ?? '')
-  }, [resultado])
+    setResultado(resultadoInicial)
+    setDefinicion(definicionInicial)
+    setGolesLocal(golesLocalInicial)
+    setGolesVisitante(golesVisitanteInicial)
+  }, [
+    resultadoInicial,
+    definicionInicial,
+    golesLocalInicial,
+    golesVisitanteInicial,
+  ])
 
-  const canSave = gl !== '' && gv !== '' && winner
+  const completo =
+    resultado &&
+    definicion &&
+    golesLocal !== '' &&
+    golesVisitante !== ''
+
+  const ganador =
+    resultado === 'L'
+      ? partido.local
+      : resultado === 'V'
+        ? partido.visitante
+        : null
 
   const handleSave = async () => {
-    if (!canSave) return
+    if (!completo) return
 
     setSaving(true)
+
     try {
-      await onSave(partido.id, Number(gl), Number(gv), winner)
+      await onSave(partido, {
+        resultado,
+        definicion,
+        goles_local: Number(golesLocal),
+        goles_visitante: Number(golesVisitante),
+      })
+
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
     } finally {
       setSaving(false)
     }
@@ -37,115 +100,206 @@ function OctavoAdminCard({ partido, resultado, onSave }) {
         border: '1px solid rgba(244,167,185,0.14)',
       }}
     >
-      <div className="flex items-center justify-between gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <div>
           <p className="text-white/35 text-xs font-mono tracking-widest uppercase">
-            Octavos · {partido.id}
+            16avos · {partido.id}
           </p>
-          <p className="text-white font-bold">
-            {partido.local} vs {partido.visitante}
+
+          <h2 className="text-white text-xl font-black mt-1">
+            {partido.localFlag} {partido.local} vs {partido.visitanteFlag} {partido.visitante}
+          </h2>
+
+          <p className="text-white/45 text-sm mt-1">
+            {partido.ciudad} · {formatFecha(partido.fecha)}
           </p>
-          <p className="text-white/40 text-sm">{partido.ciudad}</p>
         </div>
 
-        {resultado && (
-          <p className="text-[#F4A7B9] text-sm font-bold">✓ Guardado</p>
+        {resultadoGuardado || partido.resultadoOficial ? (
+          <div className="text-left sm:text-right">
+            <p className="text-[#F4A7B9] text-sm font-bold">
+              Resultado cargado
+            </p>
+
+            <p className="text-white/45 text-xs">
+              {ganador ? `Avanzó ${ganador}` : ''}
+            </p>
+          </div>
+        ) : (
+          <p className="text-white/35 text-sm">
+            Sin resultado
+          </p>
         )}
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center">
-        <div>
-          <p className="text-white/60 text-sm mb-2">{partido.local}</p>
-          <input
-            type="number"
-            min="0"
-            value={gl}
-            onChange={(e) => setGl(e.target.value)}
-            className="w-full h-12 rounded-xl text-center text-xl font-bold"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          />
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-center mb-5">
+        <button
+          onClick={() => setResultado('L')}
+          className="rounded-xl px-4 py-4 text-left transition-all"
+          style={{
+            background: resultado === 'L' ? '#F4A7B9' : 'rgba(255,255,255,0.04)',
+            color: resultado === 'L' ? '#111F18' : '#fff',
+            border:
+              resultado === 'L'
+                ? '1px solid #F4A7B9'
+                : '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <p className="text-xs uppercase tracking-widest opacity-60">
+            Avanzó
+          </p>
+
+          <p className="font-bold text-lg">
+            {partido.localFlag} {partido.local}
+          </p>
+        </button>
+
+        <div className="text-center text-white/30 font-bold">
+          vs
         </div>
 
-        <p className="text-white/30 font-bold pt-7">-</p>
+        <button
+          onClick={() => setResultado('V')}
+          className="rounded-xl px-4 py-4 text-left transition-all"
+          style={{
+            background: resultado === 'V' ? '#F4A7B9' : 'rgba(255,255,255,0.04)',
+            color: resultado === 'V' ? '#111F18' : '#fff',
+            border:
+              resultado === 'V'
+                ? '1px solid #F4A7B9'
+                : '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <p className="text-xs uppercase tracking-widest opacity-60">
+            Avanzó
+          </p>
 
-        <div>
-          <p className="text-white/60 text-sm mb-2">{partido.visitante}</p>
-          <input
-            type="number"
-            min="0"
-            value={gv}
-            onChange={(e) => setGv(e.target.value)}
-            className="w-full h-12 rounded-xl text-center text-xl font-bold"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          />
-        </div>
+          <p className="font-bold text-lg">
+            {partido.visitanteFlag} {partido.visitante}
+          </p>
+        </button>
       </div>
 
-      <div className="mt-4">
-        <p className="text-white/45 text-sm mb-2">
-          ¿Quién avanzó? Esto importa si hubo empate y penales.
+      <div className="mb-5">
+        <p className="text-white/45 text-sm mb-3">
+          ¿Cómo se definió el partido?
         </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <button
-            onClick={() => setWinner('L')}
-            className="rounded-xl px-4 py-3 font-bold text-left"
-            style={{
-              background: winner === 'L' ? '#F4A7B9' : 'rgba(255,255,255,0.04)',
-              color: winner === 'L' ? '#111F18' : '#fff',
-              border: '1px solid rgba(244,167,185,0.18)',
-            }}
-          >
-            Avanzó {partido.local}
-          </button>
-
-          <button
-            onClick={() => setWinner('V')}
-            className="rounded-xl px-4 py-3 font-bold text-left"
-            style={{
-              background: winner === 'V' ? '#F4A7B9' : 'rgba(255,255,255,0.04)',
-              color: winner === 'V' ? '#111F18' : '#fff',
-              border: '1px solid rgba(244,167,185,0.18)',
-            }}
-          >
-            Avanzó {partido.visitante}
-          </button>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {DEFINICIONES.map((opcion) => (
+            <button
+              key={opcion.value}
+              onClick={() => setDefinicion(opcion.value)}
+              className="rounded-xl px-4 py-3 text-sm font-bold transition-all"
+              style={{
+                background:
+                  definicion === opcion.value
+                    ? '#F4A7B9'
+                    : 'rgba(255,255,255,0.04)',
+                color:
+                  definicion === opcion.value
+                    ? '#111F18'
+                    : '#fff',
+                border:
+                  definicion === opcion.value
+                    ? '1px solid #F4A7B9'
+                    : '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              {opcion.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={!canSave || saving}
-        className="mt-4 rounded-xl px-4 py-2 text-sm font-bold disabled:opacity-40"
-        style={{ background: '#F4A7B9', color: '#111F18' }}
-      >
-        {saving ? 'Guardando...' : 'Guardar resultado'}
-      </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+        <label className="block">
+          <span className="text-white/45 text-sm">
+            Goles {partido.local}
+          </span>
+
+          <input
+            type="number"
+            min="0"
+            value={golesLocal}
+            onChange={(e) => setGolesLocal(e.target.value)}
+            className="mt-2 w-full rounded-xl px-4 py-3 text-white outline-none"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.10)',
+            }}
+          />
+        </label>
+
+        <label className="block">
+          <span className="text-white/45 text-sm">
+            Goles {partido.visitante}
+          </span>
+
+          <input
+            type="number"
+            min="0"
+            value={golesVisitante}
+            onChange={(e) => setGolesVisitante(e.target.value)}
+            className="mt-2 w-full rounded-xl px-4 py-3 text-white outline-none"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.10)',
+            }}
+          />
+        </label>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <p className="text-white/45 text-sm">
+            {resultado
+              ? `Avanzó: ${ganador}`
+              : 'Selecciona quién avanzó'}
+          </p>
+
+          <p className="text-white/35 text-xs mt-1">
+            {definicion
+              ? `Definición: ${getLabelDefinicion(definicion)}`
+              : 'Selecciona cómo se definió el partido'}
+          </p>
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={!completo || saving}
+          className="rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-40"
+          style={{
+            background: '#F4A7B9',
+            color: '#111F18',
+          }}
+        >
+          {saving
+            ? 'Guardando...'
+            : saved
+              ? '✓ Guardado'
+              : 'Guardar resultado'}
+        </button>
+      </div>
     </div>
   )
 }
 
 export default function AdminOctavosPage() {
   const { user } = useAuth()
+
   const [resultados, setResultados] = useState({})
   const [loading, setLoading] = useState(true)
 
   const esAdmin = user?.email === ADMIN_EMAIL
 
-  const fetchData = useCallback(async () => {
+  const cargarResultados = useCallback(async () => {
     const { data } = await supabase
       .from('resultados')
-      .select('*')
+      .select('id,partido_id,resultado,definicion,goles_local,goles_visitante')
 
     const map = {}
+
     ;(data || []).forEach((r) => {
       map[r.partido_id] = r
     })
@@ -155,40 +309,86 @@ export default function AdminOctavosPage() {
   }, [])
 
   useEffect(() => {
-    if (esAdmin) fetchData()
-  }, [esAdmin, fetchData])
+    cargarResultados()
+  }, [cargarResultados])
 
-  if (!user) return <Navigate to="/login" replace />
-  if (!esAdmin) return <Navigate to="/tabla" replace />
+  const handleSave = async (partido, payload) => {
+    const existing = resultados[partido.id]
 
-  const handleSaveResultado = async (partidoId, gl, gv, winner) => {
-    const payload = {
-      partido_id: partidoId,
-      goles_local: gl,
-      goles_visitante: gv,
-      resultado: winner,
-      updated_at: new Date().toISOString(),
+    if (existing?.id) {
+      const { data, error } = await supabase
+        .from('resultados')
+        .update({
+          resultado: payload.resultado,
+          definicion: payload.definicion,
+          goles_local: payload.goles_local,
+          goles_visitante: payload.goles_visitante,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      setResultados((prev) => ({
+        ...prev,
+        [partido.id]: data,
+      }))
+
+      return
     }
 
-    await supabase
+    const { data, error } = await supabase
       .from('resultados')
-      .upsert(payload)
+      .insert({
+        partido_id: partido.id,
+        resultado: payload.resultado,
+        definicion: payload.definicion,
+        goles_local: payload.goles_local,
+        goles_visitante: payload.goles_visitante,
+      })
+      .select()
+      .single()
+
+    if (error) throw error
 
     setResultados((prev) => ({
       ...prev,
-      [partidoId]: payload,
+      [partido.id]: data,
     }))
+  }
+
+  if (!esAdmin) {
+    return (
+      <div className="max-w-4xl mx-auto px-4 py-10">
+        <h1
+          className="text-4xl font-black text-white"
+          style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+        >
+          Admin 16avos
+        </h1>
+
+        <p className="text-white/50 mt-3">
+          No tienes permisos para ver esta página.
+        </p>
+      </div>
+    )
   }
 
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10">
-        <p className="text-white/50">Cargando admin de octavos...</p>
+        <p className="text-white/50">
+          Cargando admin de 16avos...
+        </p>
       </div>
     )
   }
 
-  const guardados = OCTAVOS.filter((p) => resultados[p.id]).length
+  const resultadosCargados = OCTAVOS.filter((partido) => {
+    return resultados[partido.id] || partido.resultadoOficial
+  }).length
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
@@ -201,20 +401,36 @@ export default function AdminOctavosPage() {
           className="text-4xl sm:text-5xl font-black text-white mt-2"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
-          Resultados de octavos
+          Resultados de 16avos
         </h1>
 
         <p className="text-white/55 mt-2">
-          {guardados}/{OCTAVOS.length} resultados cargados.
+          Captura quién avanzó, el marcador y si el partido se definió en tiempo regular, tiempos extras o penales.
+        </p>
+      </div>
+
+      <div
+        className="rounded-2xl p-5 mb-6"
+        style={{
+          background: 'rgba(244,167,185,0.08)',
+          border: '1px solid rgba(244,167,185,0.16)',
+        }}
+      >
+        <p className="text-white font-bold">
+          Resultados cargados: {resultadosCargados}/{OCTAVOS.length}
+        </p>
+
+        <p className="text-white/45 text-sm mt-1">
+          Cada partido puede dar hasta 2 puntos: 1 por quién avanzó y 1 por cómo avanzó.
         </p>
       </div>
 
       {OCTAVOS.map((partido) => (
-        <OctavoAdminCard
+        <AdminPartidoCard
           key={partido.id}
           partido={partido}
-          resultado={resultados[partido.id]}
-          onSave={handleSaveResultado}
+          resultadoGuardado={resultados[partido.id]}
+          onSave={handleSave}
         />
       ))}
     </div>
