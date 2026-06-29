@@ -15,6 +15,29 @@ import OctavosPage from './pages/OctavosPage'
 import AdminOctavosPage from './pages/AdminOctavosPage'
 import TablaEliminatoriasPage from './pages/TablaEliminatoriasPage'
 
+function Loader() {
+  return (
+    <div
+      className="min-h-screen flex items-center justify-center"
+      style={{ background: '#111F18' }}
+    >
+      <div className="flex flex-col items-center gap-4">
+        <div
+          className="w-10 h-10 rounded-full animate-spin"
+          style={{
+            border: '2px solid rgba(244,167,185,0.2)',
+            borderTopColor: '#F4A7B9',
+          }}
+        />
+
+        <p className="text-white/40 font-mono text-sm tracking-widest">
+          CARGANDO...
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
 
@@ -35,14 +58,120 @@ function PublicOnlyRoute({ children }) {
   return children
 }
 
-function Loader() {
+export default function App() {
   return (
-    <div
-      className="min-h-screen flex items-center justify-center"
-      style={{ background: '#111F18' }}
-    >
-      <div className="flex flex-col items-center gap-4">
-        <div
-          className="w-10 h-10 rounded-full animate-spin"
-          style={{
-            border: '
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Navigate to="/16avos" replace />} />
+
+          <Route
+            path="/login"
+            element={
+              <PublicOnlyRoute>
+                <LoginPage />
+              </PublicOnlyRoute>
+            }
+          />
+
+          <Route
+            path="/registro"
+            element={
+              <PublicOnlyRoute>
+                <RegisterPage />
+              </PublicOnlyRoute>
+            }
+          />
+
+          <Route
+            path="/16avos"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <OctavosPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route path="/octavos" element={<Navigate to="/16avos" replace />} />
+
+          <Route
+            path="/tabla-eliminatorias"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <TablaEliminatoriasPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/mis-predicciones"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <MisPrediccionesPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/partidos"
+            element={
+              <Layout>
+                <PartidosPage />
+              </Layout>
+            }
+          />
+
+          <Route
+            path="/participantes"
+            element={
+              <Layout>
+                <ParticipantesPage />
+              </Layout>
+            }
+          />
+
+          <Route
+            path="/admin"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <AdminPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/admin-16avos"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <AdminOctavosPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route path="/admin-octavos" element={<Navigate to="/admin-16avos" replace />} />
+
+          <Route
+            path="/tabla"
+            element={
+              <Layout>
+                <TablaPublicaPage />
+              </Layout>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/16avos" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
+  )
+}
