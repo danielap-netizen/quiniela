@@ -102,3 +102,98 @@ export const PARTIDOS = [
 export const GRUPOS = ['A','B','C','D','E','F','G','H','I','J','K','L']
 
 export const PUNTOS_POR_ACIERTO = 1
+// ============================================================
+// ELIMINATORIAS · OCTAVOS
+// Quiniela separada de fase de grupos.
+// Cada acierto vale 1 punto.
+// L = avanza el equipo de la izquierda
+// V = avanza el equipo de la derecha
+// ============================================================
+
+export const FECHA_CIERRE_OCTAVOS = new Date('2026-07-04T20:00:00Z')
+
+export const OCTAVOS = [
+  {
+    id: 'M89',
+    fase: 'octavos',
+    local: 'Ganador M74',
+    visitante: 'Ganador M77',
+    fecha: '2026-07-04T21:00:00Z',
+    ciudad: 'Philadelphia',
+    localFlag: '',
+    visitanteFlag: '',
+  },
+  {
+    id: 'M90',
+    fase: 'octavos',
+    local: 'Ganador M73',
+    visitante: 'Ganador M75',
+    fecha: '2026-07-05T01:00:00Z',
+    ciudad: 'Houston',
+    localFlag: '',
+    visitanteFlag: '',
+  },
+  {
+    id: 'M91',
+    fase: 'octavos',
+    local: 'Ganador M76',
+    visitante: 'Ganador M78',
+    fecha: '2026-07-05T21:00:00Z',
+    ciudad: 'Nueva Jersey',
+    localFlag: '',
+    visitanteFlag: '',
+  },
+  {
+    id: 'M92',
+    fase: 'octavos',
+    local: 'Ganador M79',
+    visitante: 'Ganador M80',
+    fecha: '2026-07-06T01:00:00Z',
+    ciudad: 'Ciudad de México',
+    localFlag: '',
+    visitanteFlag: '',
+  },
+  {
+    id: 'M93',
+    fase: 'octavos',
+    local: 'Ganador M83',
+    visitante: 'Ganador M84',
+    fecha: '2026-07-06T21:00:00Z',
+    ciudad: 'Dallas',
+    localFlag: '',
+    visitanteFlag: '',
+  },
+  {
+    id: 'M94',
+    fase: 'octavos',
+    local: 'Ganador M81',
+    visitante: 'Ganador M82',
+    fecha: '2026-07-07T01:00:00Z',
+    ciudad: 'Seattle',
+    localFlag: '',
+    visitanteFlag: '',
+  },
+  {
+    id: 'M95',
+    fase: 'octavos',
+    local: 'Ganador M86',
+    visitante: 'Ganador M88',
+    fecha: '2026-07-07T21:00:00Z',
+    ciudad: 'Atlanta',
+    localFlag: '',
+    visitanteFlag: '',
+  },
+  {
+    id: 'M96',
+    fase: 'octavos',
+    local: 'Ganador M85',
+    visitante: 'Ganador M87',
+    fecha: '2026-07-08T01:00:00Z',
+    ciudad: 'Vancouver',
+    localFlag: '',
+    visitanteFlag: '',
+  },
+]
+
+export const ELIMINATORIAS = [...OCTAVOS]
+export const PUNTOS_POR_ACIERTO_ELIMINATORIAS = 1
