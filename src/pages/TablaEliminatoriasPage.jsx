@@ -34,6 +34,14 @@ function nombreCorto(nombre) {
     .join(' ')
 }
 
+function getPrediccionValor(partido, preds) {
+  if (partido.bloqueado && partido.resultadoOficial) {
+    return partido.resultadoOficial
+  }
+
+  return preds[partido.id] || null
+}
+
 export default function TablaEliminatoriasPage() {
   const [participantes, setParticipantes] = useState([])
   const [resultados, setResultados] = useState({})
@@ -51,13 +59,27 @@ export default function TablaEliminatoriasPage() {
     const idsEliminatorias = ELIMINATORIAS.map((p) => p.id)
 
     const resMap = {}
+
     resultadosData.forEach((r) => {
       if (idsEliminatorias.includes(r.partido_id)) {
         resMap[r.partido_id] = r
       }
     })
 
+    ELIMINATORIAS.forEach((partido) => {
+      if (partido.resultadoOficial) {
+        resMap[partido.id] = {
+          partido_id: partido.id,
+          resultado: partido.resultadoOficial,
+          goles_local: partido.golesLocalOficial,
+          goles_visitante: partido.golesVisitanteOficial,
+          oficial: true,
+        }
+      }
+    })
+
     const predsPorUsuario = {}
+
     predicciones.forEach((p) => {
       if (!idsEliminatorias.includes(p.partido_id)) return
 
@@ -72,17 +94,21 @@ export default function TablaEliminatoriasPage() {
       const preds = predsPorUsuario[profile.id] || {}
 
       let puntos = 0
+      let hechas = 0
 
       ELIMINATORIAS.forEach((partido) => {
-        const pred = preds[partido.id]
+        const pred = getPrediccionValor(partido, preds)
         const res = resMap[partido.id]
+
+        if (pred) {
+          hechas += 1
+        }
 
         if (pred && res && pred === res.resultado) {
           puntos += 1
         }
       })
 
-      const hechas = Object.keys(preds).length
       const faltantes = ELIMINATORIAS.length - hechas
 
       return {
@@ -101,6 +127,7 @@ export default function TablaEliminatoriasPage() {
 
     soloCompletos.sort((a, b) => {
       if (b.puntos !== a.puntos) return b.puntos - a.puntos
+
       return a.nombre.localeCompare(b.nombre)
     })
 
@@ -116,7 +143,9 @@ export default function TablaEliminatoriasPage() {
   if (loading) {
     return (
       <div className="max-w-5xl mx-auto px-4 py-10">
-        <p className="text-white/50">Cargando tabla de eliminatorias...</p>
+        <p className="text-white/50">
+          Cargando tabla de eliminatorias...
+        </p>
       </div>
     )
   }
@@ -138,7 +167,7 @@ export default function TablaEliminatoriasPage() {
         </h1>
 
         <p className="text-white/55 mt-2">
-          Esta tabla es independiente de la fase de grupos. Solo aparecen quienes ya completaron sus predicciones de octavos.
+          Esta tabla es independiente de la fase de grupos. Solo aparecen quienes ya completaron sus predicciones de 16avos.
         </p>
       </div>
 
@@ -152,8 +181,9 @@ export default function TablaEliminatoriasPage() {
         <p className="text-white font-bold">
           Resultados cargados: {partidosConResultado}/{ELIMINATORIAS.length}
         </p>
+
         <p className="text-white/45 text-sm mt-1">
-          Cada acierto vale 1 punto. Por ahora esta tabla calcula octavos.
+          Cada acierto vale 1 punto. Canadá ya cuenta como ganador del primer partido cerrado.
         </p>
       </div>
 
@@ -166,10 +196,11 @@ export default function TablaEliminatoriasPage() {
           }}
         >
           <p className="text-white font-bold text-lg">
-            Todavía no hay participantes completos en octavos.
+            Todavía no hay participantes completos en 16avos.
           </p>
+
           <p className="text-white/45 text-sm mt-2">
-            En esta tabla solo aparecerán quienes hayan guardado sus 8 predicciones de octavos.
+            En esta tabla solo aparecerán quienes hayan completado sus predicciones de 16avos.
           </p>
         </div>
       ) : (
@@ -206,7 +237,7 @@ export default function TablaEliminatoriasPage() {
                   </p>
 
                   <p className="text-white/40 text-sm">
-                    8/8 predicciones hechas · completo
+                    {ELIMINATORIAS.length}/{ELIMINATORIAS.length} predicciones hechas · completo
                   </p>
                 </div>
               </div>
@@ -215,6 +246,7 @@ export default function TablaEliminatoriasPage() {
                 <p className="text-[#F4A7B9] text-2xl font-black">
                   {p.puntos}
                 </p>
+
                 <p className="text-white/35 text-xs uppercase tracking-widest">
                   puntos
                 </p>
