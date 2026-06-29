@@ -1,199 +1,243 @@
-// ============================================================
-//  ⚙️  CONFIGURACIÓN CENTRAL
-// ============================================================
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/auth'
+import { FECHA_CIERRE, NOMBRE_CORTO } from '../lib/config'
+import { useState, useEffect } from 'react'
 
-// Deadline: 12:00 hora CDMX (1h antes del partido inaugural de las 13:00)
-export const FECHA_CIERRE = new Date('2026-06-11T18:00:00Z')
-export const ADMIN_EMAIL = 'danielapereyraf@gmail.com'
-export const NOMBRE_TORNEO = 'Mundial 2026 · Familia Pereyra Fernández'
-export const NOMBRE_CORTO = 'Quiniela Mundial 2026'
+function StatusBadge() {
+  const [now, setNow] = useState(new Date())
 
-// ============================================================
-//  72 PARTIDOS FASE DE GRUPOS · horarios en hora de CDMX
-//  (guardados en UTC; CDMX = UTC-6, así que UTC = hora CDMX + 6)
-// ============================================================
-export const PARTIDOS = [
-  // ── GRUPO A ──
-  { id:'A1', grupo:'A', local:'México',        visitante:'Sudáfrica',     fecha:'2026-06-11T19:00:00Z', ciudad:'Ciudad de México', localFlag:'🇲🇽', visitanteFlag:'🇿🇦' },
-  { id:'A2', grupo:'A', local:'Corea del Sur', visitante:'Chequia',       fecha:'2026-06-12T02:00:00Z', ciudad:'Guadalajara',      localFlag:'🇰🇷', visitanteFlag:'🇨🇿' },
-  { id:'A3', grupo:'A', local:'Chequia',       visitante:'Sudáfrica',     fecha:'2026-06-18T16:00:00Z', ciudad:'Atlanta',          localFlag:'🇨🇿', visitanteFlag:'🇿🇦' },
-  { id:'A4', grupo:'A', local:'México',        visitante:'Corea del Sur', fecha:'2026-06-19T01:00:00Z', ciudad:'Guadalajara',      localFlag:'🇲🇽', visitanteFlag:'🇰🇷' },
-  { id:'A5', grupo:'A', local:'Chequia',       visitante:'México',        fecha:'2026-06-25T01:00:00Z', ciudad:'Ciudad de México', localFlag:'🇨🇿', visitanteFlag:'🇲🇽' },
-  { id:'A6', grupo:'A', local:'Sudáfrica',     visitante:'Corea del Sur', fecha:'2026-06-25T01:00:00Z', ciudad:'Monterrey',        localFlag:'🇿🇦', visitanteFlag:'🇰🇷' },
-  // ── GRUPO B ──
-  { id:'B1', grupo:'B', local:'Canadá',        visitante:'Bosnia',        fecha:'2026-06-12T19:00:00Z', ciudad:'Toronto',          localFlag:'🇨🇦', visitanteFlag:'🇧🇦' },
-  { id:'B2', grupo:'B', local:'Qatar',         visitante:'Suiza',         fecha:'2026-06-13T19:00:00Z', ciudad:'San Francisco',    localFlag:'🇶🇦', visitanteFlag:'🇨🇭' },
-  { id:'B3', grupo:'B', local:'Suiza',         visitante:'Bosnia',        fecha:'2026-06-18T19:00:00Z', ciudad:'Los Ángeles',      localFlag:'🇨🇭', visitanteFlag:'🇧🇦' },
-  { id:'B4', grupo:'B', local:'Canadá',        visitante:'Qatar',         fecha:'2026-06-18T22:00:00Z', ciudad:'Vancouver',        localFlag:'🇨🇦', visitanteFlag:'🇶🇦' },
-  { id:'B5', grupo:'B', local:'Suiza',         visitante:'Canadá',        fecha:'2026-06-24T19:00:00Z', ciudad:'Vancouver',        localFlag:'🇨🇭', visitanteFlag:'🇨🇦' },
-  { id:'B6', grupo:'B', local:'Bosnia',        visitante:'Qatar',         fecha:'2026-06-24T19:00:00Z', ciudad:'Seattle',          localFlag:'🇧🇦', visitanteFlag:'🇶🇦' },
-  // ── GRUPO C ──
-  { id:'C1', grupo:'C', local:'Brasil',        visitante:'Marruecos',     fecha:'2026-06-13T22:00:00Z', ciudad:'Nueva Jersey',     localFlag:'🇧🇷', visitanteFlag:'🇲🇦' },
-  { id:'C2', grupo:'C', local:'Haití',         visitante:'Escocia',       fecha:'2026-06-14T01:00:00Z', ciudad:'Boston',           localFlag:'🇭🇹', visitanteFlag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
-  { id:'C3', grupo:'C', local:'Escocia',       visitante:'Marruecos',     fecha:'2026-06-19T22:00:00Z', ciudad:'Boston',           localFlag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', visitanteFlag:'🇲🇦' },
-  { id:'C4', grupo:'C', local:'Brasil',        visitante:'Haití',         fecha:'2026-06-20T00:30:00Z', ciudad:'Philadelphia',     localFlag:'🇧🇷', visitanteFlag:'🇭🇹' },
-  { id:'C5', grupo:'C', local:'Escocia',       visitante:'Brasil',        fecha:'2026-06-24T22:00:00Z', ciudad:'Miami',            localFlag:'🏴󠁧󠁢󠁳󠁣󠁴󠁿', visitanteFlag:'🇧🇷' },
-  { id:'C6', grupo:'C', local:'Marruecos',     visitante:'Haití',         fecha:'2026-06-24T22:00:00Z', ciudad:'Atlanta',          localFlag:'🇲🇦', visitanteFlag:'🇭🇹' },
-  // ── GRUPO D ──
-  { id:'D1', grupo:'D', local:'EUA',           visitante:'Paraguay',      fecha:'2026-06-13T01:00:00Z', ciudad:'Los Ángeles',      localFlag:'🇺🇸', visitanteFlag:'🇵🇾' },
-  { id:'D2', grupo:'D', local:'Australia',     visitante:'Turquía',       fecha:'2026-06-14T04:00:00Z', ciudad:'Vancouver',        localFlag:'🇦🇺', visitanteFlag:'🇹🇷' },
-  { id:'D3', grupo:'D', local:'EUA',           visitante:'Australia',     fecha:'2026-06-19T19:00:00Z', ciudad:'Seattle',          localFlag:'🇺🇸', visitanteFlag:'🇦🇺' },
-  { id:'D4', grupo:'D', local:'Turquía',       visitante:'Paraguay',      fecha:'2026-06-20T03:00:00Z', ciudad:'San Francisco',    localFlag:'🇹🇷', visitanteFlag:'🇵🇾' },
-  { id:'D5', grupo:'D', local:'Turquía',       visitante:'EUA',           fecha:'2026-06-26T02:00:00Z', ciudad:'Los Ángeles',      localFlag:'🇹🇷', visitanteFlag:'🇺🇸' },
-  { id:'D6', grupo:'D', local:'Paraguay',      visitante:'Australia',     fecha:'2026-06-26T02:00:00Z', ciudad:'San Francisco',    localFlag:'🇵🇾', visitanteFlag:'🇦🇺' },
-  // ── GRUPO E ──
-  { id:'E1', grupo:'E', local:'Alemania',      visitante:'Curazao',       fecha:'2026-06-14T17:00:00Z', ciudad:'Houston',          localFlag:'🇩🇪', visitanteFlag:'🇨🇼' },
-  { id:'E2', grupo:'E', local:'Costa de Marfil',visitante:'Ecuador',      fecha:'2026-06-14T23:00:00Z', ciudad:'Philadelphia',     localFlag:'🇨🇮', visitanteFlag:'🇪🇨' },
-  { id:'E3', grupo:'E', local:'Alemania',      visitante:'Costa de Marfil',fecha:'2026-06-20T20:00:00Z',ciudad:'Toronto',          localFlag:'🇩🇪', visitanteFlag:'🇨🇮' },
-  { id:'E4', grupo:'E', local:'Ecuador',       visitante:'Curazao',       fecha:'2026-06-21T00:00:00Z', ciudad:'Kansas City',      localFlag:'🇪🇨', visitanteFlag:'🇨🇼' },
-  { id:'E5', grupo:'E', local:'Ecuador',       visitante:'Alemania',      fecha:'2026-06-25T20:00:00Z', ciudad:'Nueva Jersey',     localFlag:'🇪🇨', visitanteFlag:'🇩🇪' },
-  { id:'E6', grupo:'E', local:'Curazao',       visitante:'Costa de Marfil',fecha:'2026-06-25T20:00:00Z',ciudad:'Philadelphia',     localFlag:'🇨🇼', visitanteFlag:'🇨🇮' },
-  // ── GRUPO F ──
-  { id:'F1', grupo:'F', local:'Países Bajos',  visitante:'Japón',         fecha:'2026-06-14T20:00:00Z', ciudad:'Dallas',           localFlag:'🇳🇱', visitanteFlag:'🇯🇵' },
-  { id:'F2', grupo:'F', local:'Suecia',        visitante:'Túnez',         fecha:'2026-06-15T02:00:00Z', ciudad:'Monterrey',        localFlag:'🇸🇪', visitanteFlag:'🇹🇳' },
-  { id:'F3', grupo:'F', local:'Países Bajos',  visitante:'Suecia',        fecha:'2026-06-20T17:00:00Z', ciudad:'Houston',          localFlag:'🇳🇱', visitanteFlag:'🇸🇪' },
-  { id:'F4', grupo:'F', local:'Túnez',         visitante:'Japón',         fecha:'2026-06-21T04:00:00Z', ciudad:'Monterrey',        localFlag:'🇹🇳', visitanteFlag:'🇯🇵' },
-  { id:'F5', grupo:'F', local:'Japón',         visitante:'Suecia',        fecha:'2026-06-25T23:00:00Z', ciudad:'Dallas',           localFlag:'🇯🇵', visitanteFlag:'🇸🇪' },
-  { id:'F6', grupo:'F', local:'Túnez',         visitante:'Países Bajos',  fecha:'2026-06-25T23:00:00Z', ciudad:'Kansas City',      localFlag:'🇹🇳', visitanteFlag:'🇳🇱' },
-  // ── GRUPO G ──
-  { id:'G1', grupo:'G', local:'Bélgica',       visitante:'Egipto',        fecha:'2026-06-15T19:00:00Z', ciudad:'Seattle',          localFlag:'🇧🇪', visitanteFlag:'🇪🇬' },
-  { id:'G2', grupo:'G', local:'Irán',          visitante:'Nueva Zelanda', fecha:'2026-06-16T01:00:00Z', ciudad:'Los Ángeles',      localFlag:'🇮🇷', visitanteFlag:'🇳🇿' },
-  { id:'G3', grupo:'G', local:'Bélgica',       visitante:'Irán',          fecha:'2026-06-21T19:00:00Z', ciudad:'Los Ángeles',      localFlag:'🇧🇪', visitanteFlag:'🇮🇷' },
-  { id:'G4', grupo:'G', local:'Nueva Zelanda', visitante:'Egipto',        fecha:'2026-06-22T01:00:00Z', ciudad:'Vancouver',        localFlag:'🇳🇿', visitanteFlag:'🇪🇬' },
-  { id:'G5', grupo:'G', local:'Egipto',        visitante:'Irán',          fecha:'2026-06-27T03:00:00Z', ciudad:'Seattle',          localFlag:'🇪🇬', visitanteFlag:'🇮🇷' },
-  { id:'G6', grupo:'G', local:'Nueva Zelanda', visitante:'Bélgica',       fecha:'2026-06-27T03:00:00Z', ciudad:'Vancouver',        localFlag:'🇳🇿', visitanteFlag:'🇧🇪' },
-  // ── GRUPO H ──
-  { id:'H1', grupo:'H', local:'España',        visitante:'Cabo Verde',    fecha:'2026-06-15T16:00:00Z', ciudad:'Atlanta',          localFlag:'🇪🇸', visitanteFlag:'🇨🇻' },
-  { id:'H2', grupo:'H', local:'Arabia Saudita',visitante:'Uruguay',       fecha:'2026-06-15T22:00:00Z', ciudad:'Miami',            localFlag:'🇸🇦', visitanteFlag:'🇺🇾' },
-  { id:'H3', grupo:'H', local:'España',        visitante:'Arabia Saudita',fecha:'2026-06-21T16:00:00Z', ciudad:'Atlanta',          localFlag:'🇪🇸', visitanteFlag:'🇸🇦' },
-  { id:'H4', grupo:'H', local:'Uruguay',       visitante:'Cabo Verde',    fecha:'2026-06-21T22:00:00Z', ciudad:'Miami',            localFlag:'🇺🇾', visitanteFlag:'🇨🇻' },
-  { id:'H5', grupo:'H', local:'Cabo Verde',    visitante:'Arabia Saudita',fecha:'2026-06-27T00:00:00Z', ciudad:'Houston',          localFlag:'🇨🇻', visitanteFlag:'🇸🇦' },
-  { id:'H6', grupo:'H', local:'Uruguay',       visitante:'España',        fecha:'2026-06-27T00:00:00Z', ciudad:'Guadalajara',      localFlag:'🇺🇾', visitanteFlag:'🇪🇸' },
-  // ── GRUPO I ──
-  { id:'I1', grupo:'I', local:'Francia',       visitante:'Senegal',       fecha:'2026-06-16T19:00:00Z', ciudad:'Nueva Jersey',     localFlag:'🇫🇷', visitanteFlag:'🇸🇳' },
-  { id:'I2', grupo:'I', local:'Irak',          visitante:'Noruega',       fecha:'2026-06-16T22:00:00Z', ciudad:'Boston',           localFlag:'🇮🇶', visitanteFlag:'🇳🇴' },
-  { id:'I3', grupo:'I', local:'Francia',       visitante:'Irak',          fecha:'2026-06-22T21:00:00Z', ciudad:'Philadelphia',     localFlag:'🇫🇷', visitanteFlag:'🇮🇶' },
-  { id:'I4', grupo:'I', local:'Noruega',       visitante:'Senegal',       fecha:'2026-06-23T00:00:00Z', ciudad:'Nueva Jersey',     localFlag:'🇳🇴', visitanteFlag:'🇸🇳' },
-  { id:'I5', grupo:'I', local:'Noruega',       visitante:'Francia',       fecha:'2026-06-26T19:00:00Z', ciudad:'Boston',           localFlag:'🇳🇴', visitanteFlag:'🇫🇷' },
-  { id:'I6', grupo:'I', local:'Senegal',       visitante:'Irak',          fecha:'2026-06-26T19:00:00Z', ciudad:'Toronto',          localFlag:'🇸🇳', visitanteFlag:'🇮🇶' },
-  // ── GRUPO J ──
-  { id:'J1', grupo:'J', local:'Argentina',     visitante:'Argelia',       fecha:'2026-06-17T01:00:00Z', ciudad:'Kansas City',      localFlag:'🇦🇷', visitanteFlag:'🇩🇿' },
-  { id:'J2', grupo:'J', local:'Austria',       visitante:'Jordania',      fecha:'2026-06-17T04:00:00Z', ciudad:'San Francisco',    localFlag:'🇦🇹', visitanteFlag:'🇯🇴' },
-  { id:'J3', grupo:'J', local:'Argentina',     visitante:'Austria',       fecha:'2026-06-22T17:00:00Z', ciudad:'Dallas',           localFlag:'🇦🇷', visitanteFlag:'🇦🇹' },
-  { id:'J4', grupo:'J', local:'Jordania',      visitante:'Argelia',       fecha:'2026-06-23T03:00:00Z', ciudad:'San Francisco',    localFlag:'🇯🇴', visitanteFlag:'🇩🇿' },
-  { id:'J5', grupo:'J', local:'Argelia',       visitante:'Austria',       fecha:'2026-06-28T02:00:00Z', ciudad:'Kansas City',      localFlag:'🇩🇿', visitanteFlag:'🇦🇹' },
-  { id:'J6', grupo:'J', local:'Jordania',      visitante:'Argentina',     fecha:'2026-06-28T02:00:00Z', ciudad:'Dallas',           localFlag:'🇯🇴', visitanteFlag:'🇦🇷' },
-  // ── GRUPO K ──
-  { id:'K1', grupo:'K', local:'Portugal',      visitante:'R.D. Congo',    fecha:'2026-06-17T17:00:00Z', ciudad:'Houston',          localFlag:'🇵🇹', visitanteFlag:'🇨🇩' },
-  { id:'K2', grupo:'K', local:'Uzbekistán',    visitante:'Colombia',      fecha:'2026-06-18T02:00:00Z', ciudad:'Ciudad de México', localFlag:'🇺🇿', visitanteFlag:'🇨🇴' },
-  { id:'K3', grupo:'K', local:'Portugal',      visitante:'Uzbekistán',    fecha:'2026-06-23T17:00:00Z', ciudad:'Houston',          localFlag:'🇵🇹', visitanteFlag:'🇺🇿' },
-  { id:'K4', grupo:'K', local:'Colombia',      visitante:'R.D. Congo',    fecha:'2026-06-24T02:00:00Z', ciudad:'Guadalajara',      localFlag:'🇨🇴', visitanteFlag:'🇨🇩' },
-  { id:'K5', grupo:'K', local:'Colombia',      visitante:'Portugal',      fecha:'2026-06-27T23:30:00Z', ciudad:'Miami',            localFlag:'🇨🇴', visitanteFlag:'🇵🇹' },
-  { id:'K6', grupo:'K', local:'R.D. Congo',    visitante:'Uzbekistán',    fecha:'2026-06-27T23:30:00Z', ciudad:'Atlanta',          localFlag:'🇨🇩', visitanteFlag:'🇺🇿' },
-  // ── GRUPO L ──
-  { id:'L1', grupo:'L', local:'Inglaterra',    visitante:'Croacia',       fecha:'2026-06-17T20:00:00Z', ciudad:'Dallas',           localFlag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', visitanteFlag:'🇭🇷' },
-  { id:'L2', grupo:'L', local:'Ghana',         visitante:'Panamá',        fecha:'2026-06-17T23:00:00Z', ciudad:'Toronto',          localFlag:'🇬🇭', visitanteFlag:'🇵🇦' },
-  { id:'L3', grupo:'L', local:'Inglaterra',    visitante:'Ghana',         fecha:'2026-06-23T20:00:00Z', ciudad:'Boston',           localFlag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', visitanteFlag:'🇬🇭' },
-  { id:'L4', grupo:'L', local:'Panamá',        visitante:'Croacia',       fecha:'2026-06-23T23:00:00Z', ciudad:'Toronto',          localFlag:'🇵🇦', visitanteFlag:'🇭🇷' },
-  { id:'L5', grupo:'L', local:'Panamá',        visitante:'Inglaterra',    fecha:'2026-06-27T21:00:00Z', ciudad:'Nueva Jersey',     localFlag:'🇵🇦', visitanteFlag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { id:'L6', grupo:'L', local:'Croacia',       visitante:'Ghana',         fecha:'2026-06-27T21:00:00Z', ciudad:'Philadelphia',     localFlag:'🇭🇷', visitanteFlag:'🇬🇭' },
-]
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(t)
+  }, [])
 
-export const GRUPOS = ['A','B','C','D','E','F','G','H','I','J','K','L']
+  const isOpen = now < FECHA_CIERRE
+  const diff = FECHA_CIERRE - now
 
-export const PUNTOS_POR_ACIERTO = 1
-// ============================================================
-// ELIMINATORIAS · OCTAVOS
-// Quiniela separada de fase de grupos.
-// Cada acierto vale 1 punto.
-// L = avanza el equipo de la izquierda
-// V = avanza el equipo de la derecha
-// ============================================================
+  if (!isOpen) {
+    return (
+      <div
+        className="hidden sm:inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-widest"
+        style={{
+          background: 'rgba(244,167,185,0.10)',
+          color: '#F4A7B9',
+          border: '1px solid rgba(244,167,185,0.20)',
+        }}
+      >
+        ELIMINATORIAS
+      </div>
+    )
+  }
 
-export const FECHA_CIERRE_OCTAVOS = new Date('2026-07-04T20:00:00Z')
+  const d = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+  const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
+  const s = Math.floor((diff % (1000 * 60)) / 1000)
 
-export const OCTAVOS = [
-  {
-    id: 'M89',
-    fase: 'octavos',
-    local: 'Ganador M74',
-    visitante: 'Ganador M77',
-    fecha: '2026-07-04T21:00:00Z',
-    ciudad: 'Philadelphia',
-    localFlag: '',
-    visitanteFlag: '',
-  },
-  {
-    id: 'M90',
-    fase: 'octavos',
-    local: 'Ganador M73',
-    visitante: 'Ganador M75',
-    fecha: '2026-07-05T01:00:00Z',
-    ciudad: 'Houston',
-    localFlag: '',
-    visitanteFlag: '',
-  },
-  {
-    id: 'M91',
-    fase: 'octavos',
-    local: 'Ganador M76',
-    visitante: 'Ganador M78',
-    fecha: '2026-07-05T21:00:00Z',
-    ciudad: 'Nueva Jersey',
-    localFlag: '',
-    visitanteFlag: '',
-  },
-  {
-    id: 'M92',
-    fase: 'octavos',
-    local: 'Ganador M79',
-    visitante: 'Ganador M80',
-    fecha: '2026-07-06T01:00:00Z',
-    ciudad: 'Ciudad de México',
-    localFlag: '',
-    visitanteFlag: '',
-  },
-  {
-    id: 'M93',
-    fase: 'octavos',
-    local: 'Ganador M83',
-    visitante: 'Ganador M84',
-    fecha: '2026-07-06T21:00:00Z',
-    ciudad: 'Dallas',
-    localFlag: '',
-    visitanteFlag: '',
-  },
-  {
-    id: 'M94',
-    fase: 'octavos',
-    local: 'Ganador M81',
-    visitante: 'Ganador M82',
-    fecha: '2026-07-07T01:00:00Z',
-    ciudad: 'Seattle',
-    localFlag: '',
-    visitanteFlag: '',
-  },
-  {
-    id: 'M95',
-    fase: 'octavos',
-    local: 'Ganador M86',
-    visitante: 'Ganador M88',
-    fecha: '2026-07-07T21:00:00Z',
-    ciudad: 'Atlanta',
-    localFlag: '',
-    visitanteFlag: '',
-  },
-  {
-    id: 'M96',
-    fase: 'octavos',
-    local: 'Ganador M85',
-    visitante: 'Ganador M87',
-    fecha: '2026-07-08T01:00:00Z',
-    ciudad: 'Vancouver',
-    localFlag: '',
-    visitanteFlag: '',
-  },
-]
+  return (
+    <div
+      className="hidden sm:inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-widest"
+      style={{
+        background: 'rgba(244,167,185,0.10)',
+        color: '#F4A7B9',
+        border: '1px solid rgba(244,167,185,0.20)',
+      }}
+    >
+      {d > 0
+        ? `${d}d ${h}h`
+        : `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`}{' '}
+      · GRUPOS
+    </div>
+  )
+}
 
-export const ELIMINATORIAS = [...OCTAVOS]
-export const PUNTOS_POR_ACIERTO_ELIMINATORIAS = 1
+export default function Layout({ children }) {
+  const { user, signOut } = useAuth()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/login')
+  }
+
+  const navLinks = [
+    ...(user ? [{ to: '/octavos', label: '16avos', icon: '🏆' }] : []),
+    { to: '/tabla-eliminatorias', label: 'Eliminatorias', icon: '🔥' },
+    { to: '/partidos', label: 'Partidos', icon: '⚽' },
+    { to: '/participantes', label: 'Participantes', icon: '' },
+    ...(user ? [{ to: '/mis-predicciones', label: 'Mis picks', icon: '✏️' }] : []),
+    { to: '/tabla', label: 'Grupos', icon: '' },
+  ]
+
+  return (
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ background: '#111F18' }}
+    >
+      <header
+        className="sticky top-0 z-40 border-b"
+        style={{
+          background: 'rgba(17,31,24,0.92)',
+          borderColor: 'rgba(244,167,185,0.12)',
+          backdropFilter: 'blur(16px)',
+        }}
+      >
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="h-16 flex items-center justify-between gap-4">
+            <Link to="/octavos" className="min-w-0">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center font-black"
+                  style={{
+                    background: '#F4A7B9',
+                    color: '#111F18',
+                  }}
+                >
+                  Q
+                </div>
+
+                <div className="min-w-0">
+                  <p
+                    className="text-white font-black leading-none truncate"
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+                  >
+                    {NOMBRE_CORTO}
+                  </p>
+                  <p className="text-white/35 text-xs leading-none mt-1">
+                    Seguimos con la fase de eliminatorias
+                  </p>
+                </div>
+              </div>
+            </Link>
+
+            <nav className="hidden md:flex items-center gap-1">
+              {navLinks.map((l) => {
+                const active = location.pathname === l.to
+
+                return (
+                  <Link
+                    key={l.to}
+                    to={l.to}
+                    className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                      active ? 'text-white' : 'text-white/50 hover:text-white'
+                    }`}
+                    style={
+                      active
+                        ? { background: 'rgba(244,167,185,0.12)' }
+                        : {}
+                    }
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {l.icon}
+                      {l.label}
+                    </span>
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <div className="hidden md:flex items-center gap-3">
+              <StatusBadge />
+
+              {user ? (
+                <button
+                  onClick={handleSignOut}
+                  className="text-sm font-semibold text-white/40 hover:text-[#F4A7B9] transition-colors"
+                >
+                  Salir →
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  className="text-sm font-semibold text-[#F4A7B9]"
+                >
+                  Ingresar
+                </Link>
+              )}
+            </div>
+
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="md:hidden w-10 h-10 rounded-xl flex items-center justify-center text-white text-xl"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              {menuOpen ? '✕' : '☰'}
+            </button>
+          </div>
+
+          {menuOpen && (
+            <div
+              className="md:hidden pb-4 pt-2 border-t"
+              style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+            >
+              <div className="flex flex-col gap-1">
+                {navLinks.map((l) => {
+                  const active = location.pathname === l.to
+
+                  return (
+                    <Link
+                      key={l.to}
+                      to={l.to}
+                      onClick={() => setMenuOpen(false)}
+                      className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                        active ? 'text-white' : 'text-white/50'
+                      }`}
+                      style={
+                        active
+                          ? { background: 'rgba(244,167,185,0.12)' }
+                          : {}
+                      }
+                    >
+                      <span>{l.icon}</span>
+                      <span>{l.label}</span>
+                    </Link>
+                  )
+                })}
+
+                {user ? (
+                  <button
+                    onClick={() => {
+                      handleSignOut()
+                      setMenuOpen(false)
+                    }}
+                    className="w-full text-left px-4 py-3 text-sm font-semibold text-white/40"
+                  >
+                    Cerrar sesión
+                  </button>
+                ) : (
+                  <Link
+                    to="/login"
+                    onClick={() => setMenuOpen(false)}
+                    className="block px-4 py-3 text-sm font-semibold text-[#F4A7B9]"
+                  >
+                    Ingresar →
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <main className="flex-1">
+        {children}
+      </main>
+
+      <footer
+        className="border-t py-6"
+        style={{ borderColor: 'rgba(244,167,185,0.10)' }}
+      >
+        <div className="max-w-6xl mx-auto px-4">
+          <p className="text-center text-white/30 text-xs">
+            Mundial 2026 · Familia Pereyra Fernández · Seguimos con la fase de eliminatorias
+          </p>
+        </div>
+      </footer>
+    </div>
+  )
+}
