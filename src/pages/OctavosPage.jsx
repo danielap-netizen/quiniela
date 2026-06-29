@@ -16,7 +16,7 @@ function formatFecha(iso) {
 }
 
 function getDeadline(partido) {
-  return new Date(new Date(partido.fecha).getTime() - 60 * 60 * 1000)
+  return new Date(new Date(partido.fecha).getTime() - 10 * 60 * 1000)
 }
 
 function puedeEditarPartido(partido, now) {
