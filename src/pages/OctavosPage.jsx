@@ -21,8 +21,11 @@ function getDeadline(partido) {
 
 function puedeEditarPartido(partido, now) {
   if (partido.bloqueado) return false
-
   return now < getDeadline(partido)
+}
+
+function getLabelDefinicion(value) {
+  return DEFINICIONES.find((d) => d.value === value)?.label || ''
 }
 
 function getValorPrediccion(partido, prediccion) {
@@ -41,8 +44,45 @@ function getValorDefinicion(partido, prediccion) {
   return prediccion?.definicion || null
 }
 
-function getLabelDefinicion(value) {
-  return DEFINICIONES.find((d) => d.value === value)?.label || ''
+function getResultadoOficial(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) {
+    return partido.resultadoOficial
+  }
+
+  return resultadoGuardado?.resultado || null
+}
+
+function getDefinicionOficial(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) {
+    return partido.definicionOficial || 'REGULAR'
+  }
+
+  return resultadoGuardado?.definicion || null
+}
+
+function getGolesLocal(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) {
+    return partido.golesLocalOficial
+  }
+
+  return resultadoGuardado?.goles_local
+}
+
+function getGolesVisitante(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) {
+    return partido.golesVisitanteOficial
+  }
+
+  return resultadoGuardado?.goles_visitante
+}
+
+function nombreCorto(nombre) {
+  const partes = String(nombre || 'Participante').trim().split(/\s+/)
+
+  return partes
+    .slice(0, 2)
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase())
+    .join(' ')
 }
 
 function DieciseisavosCard({ partido, prediccion, onSave, now }) {
@@ -60,15 +100,8 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
     setDefinicion(getValorDefinicion(partido, prediccion))
   }, [partido, prediccion])
 
-  const isDirty =
-    sel !== valorInicial ||
-    definicion !== definicionInicial
-
-  const canSave =
-    editable &&
-    sel &&
-    definicion &&
-    isDirty
+  const isDirty = sel !== valorInicial || definicion !== definicionInicial
+  const canSave = editable && sel && definicion && isDirty
 
   const handleSave = async () => {
     if (!canSave) return
@@ -285,12 +318,143 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
   )
 }
 
+function ResultadosTerminados({ resultados }) {
+  const partidosTerminados = OCTAVOS.filter((partido) => {
+    return Boolean(getResultadoOficial(partido, resultados[partido.id]))
+  })
+
+  if (partidosTerminados.length === 0) return null
+
+  return (
+    <div className="mb-8">
+      <h2
+        className="text-3xl font-black text-white mb-4"
+        style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+      >
+        Resultados
+      </h2>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {partidosTerminados.map((partido) => {
+          const resultado = resultados[partido.id]
+          const ganador = getResultadoOficial(partido, resultado)
+          const definicion = getDefinicionOficial(partido, resultado)
+          const golesLocal = getGolesLocal(partido, resultado)
+          const golesVisitante = getGolesVisitante(partido, resultado)
+
+          const ganadorNombre =
+            ganador === 'L'
+              ? partido.local
+              : ganador === 'V'
+                ? partido.visitante
+                : ''
+
+          return (
+            <div
+              key={partido.id}
+              className="rounded-2xl p-4"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.08)',
+              }}
+            >
+              <p className="text-white/35 text-xs font-mono tracking-widest uppercase">
+                {partido.id} · 16avos
+              </p>
+
+              <p className="text-white font-bold mt-2">
+                {partido.localFlag} {partido.local} {golesLocal}-{golesVisitante} {partido.visitanteFlag} {partido.visitante}
+              </p>
+
+              <p className="text-[#F4A7B9] text-sm font-bold mt-2">
+                Avanzó {ganadorNombre}
+              </p>
+
+              <p className="text-white/40 text-sm mt-1">
+                Definición: {getLabelDefinicion(definicion)}
+              </p>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function TablaInicio({ participantes }) {
+  if (participantes.length === 0) return null
+
+  return (
+    <div className="mb-8">
+      <h2
+        className="text-3xl font-black text-white mb-4"
+        style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+      >
+        Tabla de participantes
+      </h2>
+
+      <div className="space-y-3">
+        {participantes.map((p, index) => (
+          <div
+            key={p.id}
+            className="rounded-2xl p-4 flex items-center justify-between gap-4"
+            style={{
+              background:
+                index === 0
+                  ? 'rgba(244,167,185,0.14)'
+                  : 'rgba(255,255,255,0.04)',
+              border:
+                index === 0
+                  ? '1px solid rgba(244,167,185,0.35)'
+                  : '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center font-black"
+                style={{
+                  background: index === 0 ? '#F4A7B9' : 'rgba(244,167,185,0.12)',
+                  color: index === 0 ? '#111F18' : '#F4A7B9',
+                }}
+              >
+                {index + 1}
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-white font-bold truncate">
+                  {nombreCorto(p.nombre)}
+                </p>
+
+                <p className="text-white/35 text-xs mt-1">
+                  {p.aciertosAvanza} ganador · {p.aciertosDefinicion} definición
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <p className="text-[#F4A7B9] text-2xl font-black">
+                {p.puntos}
+              </p>
+
+              <p className="text-white/35 text-xs uppercase tracking-widest">
+                puntos
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function OctavosPage() {
   const { user } = useAuth()
 
   const [preds, setPreds] = useState({})
   const [loading, setLoading] = useState(true)
   const [now, setNow] = useState(new Date())
+  const [resultados, setResultados] = useState({})
+  const [participantes, setParticipantes] = useState([])
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60000)
@@ -298,27 +462,130 @@ export default function OctavosPage() {
     return () => clearInterval(t)
   }, [])
 
-  const fetchPreds = useCallback(async () => {
+  const cargarTodo = useCallback(async () => {
     if (!user) return
 
-    const { data } = await supabase
-      .from('predicciones')
-      .select('*')
-      .eq('user_id', user.id)
+    const [
+      misPredicciones,
+      perfilesData,
+      todasPredicciones,
+      resultadosData,
+    ] = await Promise.all([
+      supabase
+        .from('predicciones')
+        .select('*')
+        .eq('user_id', user.id),
+      supabase
+        .from('profiles')
+        .select('id,nombre,email,pago'),
+      supabase
+        .from('predicciones')
+        .select('user_id,partido_id,resultado,definicion'),
+      supabase
+        .from('resultados')
+        .select('partido_id,resultado,definicion,goles_local,goles_visitante'),
+    ])
 
-    const map = {}
+    const misMap = {}
 
-    ;(data || []).forEach((p) => {
-      map[p.partido_id] = p
+    ;(misPredicciones.data || []).forEach((p) => {
+      misMap[p.partido_id] = p
     })
 
-    setPreds(map)
+    const resMap = {}
+
+    ;(resultadosData.data || []).forEach((r) => {
+      resMap[r.partido_id] = r
+    })
+
+    OCTAVOS.forEach((partido) => {
+      if (partido.resultadoOficial) {
+        resMap[partido.id] = {
+          partido_id: partido.id,
+          resultado: partido.resultadoOficial,
+          definicion: partido.definicionOficial || 'REGULAR',
+          goles_local: partido.golesLocalOficial,
+          goles_visitante: partido.golesVisitanteOficial,
+          oficial: true,
+        }
+      }
+    })
+
+    const predsPorUsuario = {}
+
+    ;(todasPredicciones.data || []).forEach((p) => {
+      if (!predsPorUsuario[p.user_id]) {
+        predsPorUsuario[p.user_id] = {}
+      }
+
+      predsPorUsuario[p.user_id][p.partido_id] = {
+        resultado: p.resultado,
+        definicion: p.definicion,
+      }
+    })
+
+    const tabla = (perfilesData.data || []).map((profile) => {
+      const userPreds = predsPorUsuario[profile.id] || {}
+
+      let puntos = 0
+      let aciertosAvanza = 0
+      let aciertosDefinicion = 0
+      let hechas = 0
+
+      OCTAVOS.forEach((partido) => {
+        const pred = userPreds[partido.id]
+        const resultado = resMap[partido.id]
+
+        const predResultado = getValorPrediccion(partido, pred)
+        const predDefinicion = getValorDefinicion(partido, pred)
+
+        const resultadoOficial = getResultadoOficial(partido, resultado)
+        const definicionOficial = getDefinicionOficial(partido, resultado)
+
+        if (predResultado && predDefinicion) {
+          hechas += 1
+        }
+
+        if (predResultado && resultadoOficial && predResultado === resultadoOficial) {
+          puntos += 1
+          aciertosAvanza += 1
+        }
+
+        if (predDefinicion && definicionOficial && predDefinicion === definicionOficial) {
+          puntos += 1
+          aciertosDefinicion += 1
+        }
+      })
+
+      return {
+        id: profile.id,
+        nombre: profile.nombre || profile.email || 'Participante',
+        email: profile.email,
+        puntos,
+        hechas,
+        aciertosAvanza,
+        aciertosDefinicion,
+      }
+    })
+
+    const tablaConPuntos = tabla
+      .filter((p) => p.puntos > 0 || p.hechas > 0)
+      .sort((a, b) => {
+        if (b.puntos !== a.puntos) return b.puntos - a.puntos
+        if (b.aciertosAvanza !== a.aciertosAvanza) return b.aciertosAvanza - a.aciertosAvanza
+
+        return a.nombre.localeCompare(b.nombre)
+      })
+
+    setPreds(misMap)
+    setResultados(resMap)
+    setParticipantes(tablaConPuntos)
     setLoading(false)
   }, [user])
 
   useEffect(() => {
-    fetchPreds()
-  }, [fetchPreds])
+    cargarTodo()
+  }, [cargarTodo])
 
   const handleSave = async (partido, resultado, definicion) => {
     if (!puedeEditarPartido(partido, new Date())) {
@@ -363,6 +630,8 @@ export default function OctavosPage() {
         [partido.id]: data,
       }))
     }
+
+    cargarTodo()
   }
 
   const completadas = OCTAVOS.filter((p) => {
@@ -407,6 +676,10 @@ export default function OctavosPage() {
           Seguimos con la fase de eliminatorias. Elige quién avanza y cómo se define cada partido.
         </p>
       </div>
+
+      <ResultadosTerminados resultados={resultados} />
+
+      <TablaInicio participantes={participantes} />
 
       <div
         className="rounded-2xl p-5 mb-6"
