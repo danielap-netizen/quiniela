@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
-import { OCTAVOS, FECHA_CIERRE_OCTAVOS } from '../lib/config'
+import { OCTAVOS } from '../lib/config'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -9,23 +9,45 @@ function formatFecha(iso) {
   return format(new Date(iso), "EEE d MMM · HH:mm 'hrs'", { locale: es })
 }
 
-function OctavosCard({ partido, prediccion, onSave, disabled }) {
-  const [sel, setSel] = useState(prediccion?.resultado || null)
+function getDeadline(partido) {
+  return new Date(new Date(partido.fecha).getTime() - 60 * 60 * 1000)
+}
+
+function puedeEditarPartido(partido, now) {
+  if (partido.bloqueado) return false
+
+  return now < getDeadline(partido)
+}
+
+function getValorPrediccion(partido, prediccion) {
+  if (partido.bloqueado && partido.resultadoOficial) {
+    return partido.resultadoOficial
+  }
+
+  return prediccion?.resultado || null
+}
+
+function DieciseisavosCard({ partido, prediccion, onSave, now }) {
+  const valorInicial = getValorPrediccion(partido, prediccion)
+  const editable = puedeEditarPartido(partido, now)
+
+  const [sel, setSel] = useState(valorInicial)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
-    setSel(prediccion?.resultado || null)
-  }, [prediccion])
+    setSel(getValorPrediccion(partido, prediccion))
+  }, [partido, prediccion])
 
-  const isDirty = sel !== (prediccion?.resultado || null)
+  const isDirty = sel !== valorInicial
 
   const handleSave = async () => {
-    if (!sel || !isDirty || disabled) return
+    if (!sel || !isDirty || !editable) return
 
     setSaving(true)
+
     try {
-      await onSave(partido.id, sel)
+      await onSave(partido, sel)
       setSaved(true)
       setTimeout(() => setSaved(false), 1500)
     } finally {
@@ -33,19 +55,31 @@ function OctavosCard({ partido, prediccion, onSave, disabled }) {
     }
   }
 
+  const ganadorOficial =
+    partido.resultadoOficial === 'L'
+      ? partido.local
+      : partido.resultadoOficial === 'V'
+        ? partido.visitante
+        : null
+
   return (
     <div
       className="rounded-2xl p-5 mb-4"
       style={{
-        background: 'rgba(244,167,185,0.06)',
-        border: '1px solid rgba(244,167,185,0.14)',
+        background: partido.bloqueado
+          ? 'rgba(244,167,185,0.10)'
+          : 'rgba(244,167,185,0.06)',
+        border: partido.bloqueado
+          ? '1px solid rgba(244,167,185,0.30)'
+          : '1px solid rgba(244,167,185,0.14)',
       }}
     >
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <p className="text-white/35 text-xs font-mono tracking-widest uppercase">
-            Octavos · {partido.id}
+            16avos · {partido.id}
           </p>
+
           <p className="text-white/45 text-sm">
             {partido.ciudad} · {formatFecha(partido.fecha)}
           </p>
@@ -56,9 +90,27 @@ function OctavosCard({ partido, prediccion, onSave, disabled }) {
         </p>
       </div>
 
+      {partido.bloqueado && (
+        <div
+          className="rounded-xl p-3 mb-4"
+          style={{
+            background: 'rgba(244,167,185,0.12)',
+            border: '1px solid rgba(244,167,185,0.18)',
+          }}
+        >
+          <p className="text-[#F4A7B9] text-sm font-bold">
+            Partido cerrado · {partido.local} {partido.golesLocalOficial}-{partido.golesVisitanteOficial} {partido.visitante}
+          </p>
+
+          <p className="text-white/50 text-sm mt-1">
+            {partido.notaResultado || `Avanzó ${ganadorOficial}.`}
+          </p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto_1fr] gap-4 items-center">
         <button
-          disabled={disabled}
+          disabled={!editable}
           onClick={() => setSel('L')}
           className="rounded-xl px-4 py-4 text-left transition-all"
           style={{
@@ -67,17 +119,24 @@ function OctavosCard({ partido, prediccion, onSave, disabled }) {
             border: sel === 'L'
               ? '1px solid #F4A7B9'
               : '1px solid rgba(255,255,255,0.08)',
-            opacity: disabled ? 0.55 : 1,
+            opacity: !editable && sel !== 'L' ? 0.35 : 1,
           }}
         >
-          <p className="text-xs uppercase tracking-widest opacity-60">Avanza</p>
-          <p className="font-bold text-lg">{partido.localFlag} {partido.local}</p>
+          <p className="text-xs uppercase tracking-widest opacity-60">
+            Avanza
+          </p>
+
+          <p className="font-bold text-lg">
+            {partido.localFlag} {partido.local}
+          </p>
         </button>
 
-        <div className="text-center text-white/30 font-bold">vs</div>
+        <div className="text-center text-white/30 font-bold">
+          vs
+        </div>
 
         <button
-          disabled={disabled}
+          disabled={!editable}
           onClick={() => setSel('V')}
           className="rounded-xl px-4 py-4 text-left transition-all"
           style={{
@@ -86,24 +145,37 @@ function OctavosCard({ partido, prediccion, onSave, disabled }) {
             border: sel === 'V'
               ? '1px solid #F4A7B9'
               : '1px solid rgba(255,255,255,0.08)',
-            opacity: disabled ? 0.55 : 1,
+            opacity: !editable && sel !== 'V' ? 0.35 : 1,
           }}
         >
-          <p className="text-xs uppercase tracking-widest opacity-60">Avanza</p>
-          <p className="font-bold text-lg">{partido.visitanteFlag} {partido.visitante}</p>
+          <p className="text-xs uppercase tracking-widest opacity-60">
+            Avanza
+          </p>
+
+          <p className="font-bold text-lg">
+            {partido.visitanteFlag} {partido.visitante}
+          </p>
         </button>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3">
-        <p className="text-white/45 text-sm">
-          {sel
-            ? sel === 'L'
-              ? `Elegiste que avanza ${partido.local}`
-              : `Elegiste que avanza ${partido.visitante}`
-            : 'Elige quién avanza'}
-        </p>
+      <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <p className="text-white/45 text-sm">
+            {sel
+              ? sel === 'L'
+                ? `Elegiste que avanza ${partido.local}`
+                : `Elegiste que avanza ${partido.visitante}`
+              : 'Elige quién avanza'}
+          </p>
 
-        {!disabled && (
+          {!partido.bloqueado && (
+            <p className="text-white/30 text-xs mt-1">
+              Puedes cambiar este partido hasta: {format(getDeadline(partido), "d MMM · HH:mm 'hrs'", { locale: es })}
+            </p>
+          )}
+        </div>
+
+        {editable ? (
           <button
             onClick={handleSave}
             disabled={!sel || !isDirty || saving}
@@ -123,11 +195,13 @@ function OctavosCard({ partido, prediccion, onSave, disabled }) {
                     ? 'Guardado'
                     : 'Elige'}
           </button>
-        )}
-
-        {disabled && (
+        ) : (
           <p className="text-[#F4A7B9] text-sm font-bold">
-            {prediccion ? '✓ Guardado' : 'Sin predicción'}
+            {partido.bloqueado
+              ? 'Resultado definido'
+              : prediccion
+                ? '✓ Guardado'
+                : 'Cerrado'}
           </p>
         )}
       </div>
@@ -137,10 +211,16 @@ function OctavosCard({ partido, prediccion, onSave, disabled }) {
 
 export default function OctavosPage() {
   const { user } = useAuth()
+
   const [preds, setPreds] = useState({})
   const [loading, setLoading] = useState(true)
+  const [now, setNow] = useState(new Date())
 
-  const isOpen = new Date() < FECHA_CIERRE_OCTAVOS
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60000)
+
+    return () => clearInterval(t)
+  }, [])
 
   const fetchPreds = useCallback(async () => {
     if (!user) return
@@ -151,6 +231,7 @@ export default function OctavosPage() {
       .eq('user_id', user.id)
 
     const map = {}
+
     ;(data || []).forEach((p) => {
       map[p.partido_id] = p
     })
@@ -163,12 +244,12 @@ export default function OctavosPage() {
     fetchPreds()
   }, [fetchPreds])
 
-  const handleSave = async (partidoId, resultado) => {
-    if (new Date() >= FECHA_CIERRE_OCTAVOS) {
-      throw new Error('Octavos cerrados')
+  const handleSave = async (partido, resultado) => {
+    if (!puedeEditarPartido(partido, new Date())) {
+      throw new Error('Este partido ya cerró')
     }
 
-    const existing = preds[partidoId]
+    const existing = preds[partido.id]
 
     if (existing) {
       await supabase
@@ -182,7 +263,7 @@ export default function OctavosPage() {
 
       setPreds((prev) => ({
         ...prev,
-        [partidoId]: {
+        [partido.id]: {
           ...existing,
           resultado,
         },
@@ -192,7 +273,7 @@ export default function OctavosPage() {
         .from('predicciones')
         .insert({
           user_id: user.id,
-          partido_id: partidoId,
+          partido_id: partido.id,
           resultado,
         })
         .select()
@@ -200,18 +281,29 @@ export default function OctavosPage() {
 
       setPreds((prev) => ({
         ...prev,
-        [partidoId]: data,
+        [partido.id]: data,
       }))
     }
   }
 
-  const completadas = OCTAVOS.filter((p) => preds[p.id]).length
+  const completadas = OCTAVOS.filter((p) => {
+    if (p.bloqueado && p.resultadoOficial) return true
+
+    return Boolean(preds[p.id])
+  }).length
+
   const faltantes = OCTAVOS.length - completadas
+
+  const partidosEditables = OCTAVOS.filter((p) =>
+    puedeEditarPartido(p, now)
+  ).length
 
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10">
-        <p className="text-white/50">Cargando octavos...</p>
+        <p className="text-white/50">
+          Cargando 16avos...
+        </p>
       </div>
     )
   }
@@ -227,11 +319,11 @@ export default function OctavosPage() {
           className="text-4xl sm:text-5xl font-black text-white mt-2"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
-          Octavos
+          16avos
         </h1>
 
         <p className="text-white/55 mt-2">
-          Esta quiniela es independiente de la fase de grupos. Aquí eliges quién avanza.
+          Seguimos con la fase de eliminatorias. Elige quién avanza en cada partido.
         </p>
       </div>
 
@@ -247,31 +339,35 @@ export default function OctavosPage() {
             <p className="text-white font-bold">
               Progreso: {completadas}/{OCTAVOS.length}
             </p>
+
             <p className="text-white/45 text-sm">
               {faltantes === 0
-                ? '✓ Ya completaste tus octavos.'
+                ? '✓ Ya completaste tus predicciones de 16avos.'
                 : `Te faltan ${faltantes} ${faltantes === 1 ? 'partido' : 'partidos'} por predecir.`}
             </p>
           </div>
 
           <div>
             <p className="text-[#F4A7B9] text-sm font-bold">
-              {isOpen ? 'Abierto' : 'Cerrado'}
+              {partidosEditables > 0
+                ? `${partidosEditables} abiertos`
+                : 'Todos cerrados'}
             </p>
+
             <p className="text-white/35 text-xs">
-              Cierre: {format(FECHA_CIERRE_OCTAVOS, "d MMM · HH:mm 'hrs'", { locale: es })}
+              Cada partido cierra 1 hora antes de empezar.
             </p>
           </div>
         </div>
       </div>
 
       {OCTAVOS.map((partido) => (
-        <OctavosCard
+        <DieciseisavosCard
           key={partido.id}
           partido={partido}
           prediccion={preds[partido.id]}
           onSave={handleSave}
-          disabled={!isOpen}
+          now={now}
         />
       ))}
     </div>
