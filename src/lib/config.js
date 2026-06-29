@@ -135,6 +135,11 @@ export const DIECISEISAVOS = [
     ciudad: 'Los Angeles Stadium',
     localFlag: '🇿🇦',
     visitanteFlag: '🇨🇦',
+    bloqueado: true,
+    resultadoOficial: 'V',
+    golesLocalOficial: 0,
+    golesVisitanteOficial: 1,
+    notaResultado: 'Canadá ganó 1-0 y ya avanzó.',
   },
   {
     id: 'M74',
