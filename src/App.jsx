@@ -11,10 +11,6 @@ import PartidosPage from './pages/PartidosPage'
 import AdminPage from './pages/AdminPage'
 import ParticipantesPage from './pages/ParticipantesPage'
 
-import OctavosPage from './pages/OctavosPage'
-import AdminOctavosPage from './pages/AdminOctavosPage'
-import TablaEliminatoriasPage from './pages/TablaEliminatoriasPage'
-
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
 
@@ -104,17 +100,6 @@ export default function App() {
           />
 
           <Route
-            path="/tabla-eliminatorias"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <TablaEliminatoriasPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-
-          <Route
             path="/partidos"
             element={
               <Layout>
@@ -133,33 +118,11 @@ export default function App() {
           />
 
           <Route
-            path="/octavos"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <OctavosPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-
-          <Route
             path="/admin"
             element={
               <PrivateRoute>
                 <Layout>
                   <AdminPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/admin-octavos"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <AdminOctavosPage />
                 </Layout>
               </PrivateRoute>
             }
