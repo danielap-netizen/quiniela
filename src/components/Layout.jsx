@@ -24,7 +24,7 @@ function StatusBadge() {
           border: '1px solid rgba(244,167,185,0.20)',
         }}
       >
-        CERRADA
+        ELIMINATORIAS
       </div>
     )
   }
@@ -46,7 +46,7 @@ function StatusBadge() {
       {d > 0
         ? `${d}d ${h}h`
         : `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`}{' '}
-      · ABIERTA
+      · GRUPOS
     </div>
   )
 }
@@ -63,12 +63,12 @@ export default function Layout({ children }) {
   }
 
   const navLinks = [
-    { to: '/tabla', label: 'Grupos', icon: '' },
-    { to: '/tabla-eliminatorias', label: 'Eliminatorias', icon: '🏆' },
+    ...(user ? [{ to: '/octavos', label: 'Octavos', icon: '🏆' }] : []),
+    { to: '/tabla-eliminatorias', label: 'Eliminatorias', icon: '🔥' },
     { to: '/partidos', label: 'Partidos', icon: '⚽' },
     { to: '/participantes', label: 'Participantes', icon: '' },
     ...(user ? [{ to: '/mis-predicciones', label: 'Mis picks', icon: '✏️' }] : []),
-    ...(user ? [{ to: '/octavos', label: 'Octavos', icon: '🏆' }] : []),
+    { to: '/tabla', label: 'Grupos', icon: '' },
   ]
 
   return (
@@ -86,7 +86,7 @@ export default function Layout({ children }) {
       >
         <div className="max-w-6xl mx-auto px-4">
           <div className="h-16 flex items-center justify-between gap-4">
-            <Link to="/tabla" className="min-w-0">
+            <Link to="/octavos" className="min-w-0">
               <div className="flex items-center gap-3">
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center font-black"
@@ -106,7 +106,7 @@ export default function Layout({ children }) {
                     {NOMBRE_CORTO}
                   </p>
                   <p className="text-white/35 text-xs leading-none mt-1">
-                    Mundial 2026
+                    Seguimos con la fase de eliminatorias
                   </p>
                 </div>
               </div>
@@ -234,7 +234,7 @@ export default function Layout({ children }) {
       >
         <div className="max-w-6xl mx-auto px-4">
           <p className="text-center text-white/30 text-xs">
-            Mundial 2026 · Familia Pereyra Fernández · Predicciones de grupos cierran 11 jun · 12:00 CDMX
+            Mundial 2026 · Familia Pereyra Fernández · Seguimos con la fase de eliminatorias
           </p>
         </div>
       </footer>
