@@ -425,6 +425,10 @@ function TablaInicio({ participantes }) {
                   {nombreCorto(p.nombre)}
                 </p>
 
+                <p className="text-white/40 text-sm">
+                  {p.hechas}/{OCTAVOS.length} predicciones hechas
+                </p>
+
                 <p className="text-white/35 text-xs mt-1">
                   {p.aciertosAvanza} ganador · {p.aciertosDefinicion} definición
                 </p>
@@ -511,9 +515,13 @@ export default function OctavosPage() {
       }
     })
 
+    const idsOctavos = OCTAVOS.map((p) => p.id)
+
     const predsPorUsuario = {}
 
     ;(todasPredicciones.data || []).forEach((p) => {
+      if (!idsOctavos.includes(p.partido_id)) return
+
       if (!predsPorUsuario[p.user_id]) {
         predsPorUsuario[p.user_id] = {}
       }
@@ -542,7 +550,7 @@ export default function OctavosPage() {
         const resultadoOficial = getResultadoOficial(partido, resultado)
         const definicionOficial = getDefinicionOficial(partido, resultado)
 
-        if (predResultado && predDefinicion) {
+        if (pred?.resultado && pred?.definicion) {
           hechas += 1
         }
 
@@ -569,7 +577,7 @@ export default function OctavosPage() {
     })
 
     const tablaConPuntos = tabla
-      .filter((p) => p.puntos > 0 || p.hechas > 0)
+      .filter((p) => p.hechas > 0)
       .sort((a, b) => {
         if (b.puntos !== a.puntos) return b.puntos - a.puntos
         if (b.aciertosAvanza !== a.aciertosAvanza) return b.aciertosAvanza - a.aciertosAvanza
