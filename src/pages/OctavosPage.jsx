@@ -5,6 +5,12 @@ import { OCTAVOS } from '../lib/config'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
+const DEFINICIONES = [
+  { value: 'REGULAR', label: 'Tiempo regular' },
+  { value: 'EXTRAS', label: 'Tiempos extras' },
+  { value: 'PENALES', label: 'Penales' },
+]
+
 function formatFecha(iso) {
   return format(new Date(iso), "EEE d MMM · HH:mm 'hrs'", { locale: es })
 }
@@ -27,27 +33,50 @@ function getValorPrediccion(partido, prediccion) {
   return prediccion?.resultado || null
 }
 
+function getValorDefinicion(partido, prediccion) {
+  if (partido.bloqueado && partido.resultadoOficial) {
+    return partido.definicionOficial || 'REGULAR'
+  }
+
+  return prediccion?.definicion || null
+}
+
+function getLabelDefinicion(value) {
+  return DEFINICIONES.find((d) => d.value === value)?.label || ''
+}
+
 function DieciseisavosCard({ partido, prediccion, onSave, now }) {
   const valorInicial = getValorPrediccion(partido, prediccion)
+  const definicionInicial = getValorDefinicion(partido, prediccion)
   const editable = puedeEditarPartido(partido, now)
 
   const [sel, setSel] = useState(valorInicial)
+  const [definicion, setDefinicion] = useState(definicionInicial)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     setSel(getValorPrediccion(partido, prediccion))
+    setDefinicion(getValorDefinicion(partido, prediccion))
   }, [partido, prediccion])
 
-  const isDirty = sel !== valorInicial
+  const isDirty =
+    sel !== valorInicial ||
+    definicion !== definicionInicial
+
+  const canSave =
+    editable &&
+    sel &&
+    definicion &&
+    isDirty
 
   const handleSave = async () => {
-    if (!sel || !isDirty || !editable) return
+    if (!canSave) return
 
     setSaving(true)
 
     try {
-      await onSave(partido, sel)
+      await onSave(partido, sel, definicion)
       setSaved(true)
       setTimeout(() => setSaved(false), 1500)
     } finally {
@@ -86,7 +115,7 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
         </div>
 
         <p className="text-[#F4A7B9] text-xs font-bold uppercase tracking-widest">
-          1 punto
+          hasta 2 puntos
         </p>
       </div>
 
@@ -104,6 +133,10 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
 
           <p className="text-white/50 text-sm mt-1">
             {partido.notaResultado || `Avanzó ${ganadorOficial}.`}
+          </p>
+
+          <p className="text-white/40 text-sm mt-1">
+            Definición: {getLabelDefinicion(definicionInicial)}
           </p>
         </div>
       )}
@@ -158,6 +191,43 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
         </button>
       </div>
 
+      <div className="mt-4">
+        <p className="text-white/45 text-sm mb-3">
+          ¿Cómo crees que se define el partido?
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {DEFINICIONES.map((opcion) => (
+            <button
+              key={opcion.value}
+              disabled={!editable}
+              onClick={() => setDefinicion(opcion.value)}
+              className="rounded-xl px-4 py-3 text-sm font-bold transition-all"
+              style={{
+                background:
+                  definicion === opcion.value
+                    ? '#F4A7B9'
+                    : 'rgba(255,255,255,0.04)',
+                color:
+                  definicion === opcion.value
+                    ? '#111F18'
+                    : '#fff',
+                border:
+                  definicion === opcion.value
+                    ? '1px solid #F4A7B9'
+                    : '1px solid rgba(255,255,255,0.08)',
+                opacity:
+                  !editable && definicion !== opcion.value
+                    ? 0.35
+                    : 1,
+              }}
+            >
+              {opcion.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <p className="text-white/45 text-sm">
@@ -166,6 +236,12 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
                 ? `Elegiste que avanza ${partido.local}`
                 : `Elegiste que avanza ${partido.visitante}`
               : 'Elige quién avanza'}
+          </p>
+
+          <p className="text-white/35 text-xs mt-1">
+            {definicion
+              ? `Definición elegida: ${getLabelDefinicion(definicion)}`
+              : 'También debes elegir cómo se define el partido.'}
           </p>
 
           {!partido.bloqueado && (
@@ -178,7 +254,7 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
         {editable ? (
           <button
             onClick={handleSave}
-            disabled={!sel || !isDirty || saving}
+            disabled={!canSave || saving}
             className="rounded-xl px-4 py-2 text-sm font-bold disabled:opacity-40"
             style={{
               background: '#F4A7B9',
@@ -189,7 +265,7 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
               ? 'Guardando...'
               : saved
                 ? '✓ Guardado'
-                : isDirty && sel
+                : isDirty && sel && definicion
                   ? 'Guardar'
                   : prediccion
                     ? 'Guardado'
@@ -244,7 +320,7 @@ export default function OctavosPage() {
     fetchPreds()
   }, [fetchPreds])
 
-  const handleSave = async (partido, resultado) => {
+  const handleSave = async (partido, resultado, definicion) => {
     if (!puedeEditarPartido(partido, new Date())) {
       throw new Error('Este partido ya cerró')
     }
@@ -256,6 +332,7 @@ export default function OctavosPage() {
         .from('predicciones')
         .update({
           resultado,
+          definicion,
           updated_at: new Date().toISOString(),
         })
         .eq('id', existing.id)
@@ -266,6 +343,7 @@ export default function OctavosPage() {
         [partido.id]: {
           ...existing,
           resultado,
+          definicion,
         },
       }))
     } else {
@@ -275,6 +353,7 @@ export default function OctavosPage() {
           user_id: user.id,
           partido_id: partido.id,
           resultado,
+          definicion,
         })
         .select()
         .single()
@@ -289,7 +368,9 @@ export default function OctavosPage() {
   const completadas = OCTAVOS.filter((p) => {
     if (p.bloqueado && p.resultadoOficial) return true
 
-    return Boolean(preds[p.id])
+    const pred = preds[p.id]
+
+    return Boolean(pred?.resultado && pred?.definicion)
   }).length
 
   const faltantes = OCTAVOS.length - completadas
@@ -323,7 +404,7 @@ export default function OctavosPage() {
         </h1>
 
         <p className="text-white/55 mt-2">
-          Seguimos con la fase de eliminatorias. Elige quién avanza en cada partido.
+          Seguimos con la fase de eliminatorias. Elige quién avanza y cómo se define cada partido.
         </p>
       </div>
 
@@ -343,7 +424,7 @@ export default function OctavosPage() {
             <p className="text-white/45 text-sm">
               {faltantes === 0
                 ? '✓ Ya completaste tus predicciones de 16avos.'
-                : `Te faltan ${faltantes} ${faltantes === 1 ? 'partido' : 'partidos'} por predecir.`}
+                : `Te faltan ${faltantes} ${faltantes === 1 ? 'partido' : 'partidos'} por completar.`}
             </p>
           </div>
 
@@ -358,6 +439,18 @@ export default function OctavosPage() {
               Cada partido cierra 1 hora antes de empezar.
             </p>
           </div>
+        </div>
+
+        <div
+          className="rounded-xl p-3 mt-4"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <p className="text-white/55 text-sm">
+            Cada partido vale hasta 2 puntos: 1 por atinar quién avanza y 1 por atinar si se define en tiempo regular, tiempos extras o penales.
+          </p>
         </div>
       </div>
 
