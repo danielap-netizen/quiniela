@@ -191,16 +191,17 @@ export default function TablaEliminatoriasPage() {
       }
     })
 
-    const soloCompletos = tablaCompleta.filter((p) => p.completo)
+    // Mostrar a quienes hicieron AL MENOS 1 prediccion de eliminatorias
+    const participantesEliminatorias = tablaCompleta.filter((p) => p.hechas > 0)
 
-    soloCompletos.sort((a, b) => {
+    participantesEliminatorias.sort((a, b) => {
       if (b.puntos !== a.puntos) return b.puntos - a.puntos
       if (b.aciertosAvanza !== a.aciertosAvanza) return b.aciertosAvanza - a.aciertosAvanza
 
       return a.nombre.localeCompare(b.nombre)
     })
 
-    setParticipantes(soloCompletos)
+    setParticipantes(participantesEliminatorias)
     setResultados(resMap)
     setLoading(false)
   }, [])
@@ -283,11 +284,11 @@ export default function TablaEliminatoriasPage() {
           }}
         >
           <p className="text-white font-bold text-lg">
-            Todavía no hay participantes completos en 16avos.
+            Todavía no hay participantes en 16avos.
           </p>
 
           <p className="text-white/45 text-sm mt-2">
-            En esta tabla solo aparecerán quienes hayan completado sus predicciones de 16avos.
+            Aquí aparecerá quien haya hecho al menos una predicción de 16avos.
           </p>
         </div>
       ) : (
@@ -324,7 +325,7 @@ export default function TablaEliminatoriasPage() {
                   </p>
 
                   <p className="text-white/40 text-sm">
-                    {ELIMINATORIAS.length}/{ELIMINATORIAS.length} predicciones hechas · completo
+                    {p.hechas}/{ELIMINATORIAS.length} predicciones hechas{p.completo ? ' · completo' : ''}
                   </p>
 
                   <p className="text-white/30 text-xs mt-1">
