@@ -34,12 +34,60 @@ function nombreCorto(nombre) {
     .join(' ')
 }
 
-function getPrediccionValor(partido, preds) {
+function getLabelDefinicion(value) {
+  if (value === 'REGULAR') return 'Tiempo regular'
+  if (value === 'EXTRAS') return 'Tiempos extras'
+  if (value === 'PENALES') return 'Penales'
+
+  return ''
+}
+
+function getResultadoOficial(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) {
+    return partido.resultadoOficial
+  }
+
+  return resultadoGuardado?.resultado || null
+}
+
+function getDefinicionOficial(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) {
+    return partido.definicionOficial || 'REGULAR'
+  }
+
+  return resultadoGuardado?.definicion || null
+}
+
+function getGolesLocal(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) {
+    return partido.golesLocalOficial
+  }
+
+  return resultadoGuardado?.goles_local
+}
+
+function getGolesVisitante(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) {
+    return partido.golesVisitanteOficial
+  }
+
+  return resultadoGuardado?.goles_visitante
+}
+
+function getPrediccionResultado(partido, prediccion) {
   if (partido.bloqueado && partido.resultadoOficial) {
     return partido.resultadoOficial
   }
 
-  return preds[partido.id] || null
+  return prediccion?.resultado || null
+}
+
+function getPrediccionDefinicion(partido, prediccion) {
+  if (partido.bloqueado && partido.resultadoOficial) {
+    return partido.definicionOficial || 'REGULAR'
+  }
+
+  return prediccion?.definicion || null
 }
 
 export default function TablaEliminatoriasPage() {
@@ -52,8 +100,8 @@ export default function TablaEliminatoriasPage() {
 
     const [profiles, predicciones, resultadosData] = await Promise.all([
       leerTodo('profiles', 'id,nombre,email,pago'),
-      leerTodo('predicciones', 'user_id,partido_id,resultado'),
-      leerTodo('resultados', 'partido_id,resultado,goles_local,goles_visitante'),
+      leerTodo('predicciones', 'user_id,partido_id,resultado,definicion'),
+      leerTodo('resultados', 'partido_id,resultado,definicion,goles_local,goles_visitante'),
     ])
 
     const idsEliminatorias = ELIMINATORIAS.map((p) => p.id)
@@ -71,6 +119,7 @@ export default function TablaEliminatoriasPage() {
         resMap[partido.id] = {
           partido_id: partido.id,
           resultado: partido.resultadoOficial,
+          definicion: partido.definicionOficial || 'REGULAR',
           goles_local: partido.golesLocalOficial,
           goles_visitante: partido.golesVisitanteOficial,
           oficial: true,
@@ -87,7 +136,10 @@ export default function TablaEliminatoriasPage() {
         predsPorUsuario[p.user_id] = {}
       }
 
-      predsPorUsuario[p.user_id][p.partido_id] = p.resultado
+      predsPorUsuario[p.user_id][p.partido_id] = {
+        resultado: p.resultado,
+        definicion: p.definicion,
+      }
     })
 
     const tablaCompleta = profiles.map((profile) => {
@@ -95,17 +147,31 @@ export default function TablaEliminatoriasPage() {
 
       let puntos = 0
       let hechas = 0
+      let aciertosAvanza = 0
+      let aciertosDefinicion = 0
 
       ELIMINATORIAS.forEach((partido) => {
-        const pred = getPrediccionValor(partido, preds)
-        const res = resMap[partido.id]
+        const prediccion = preds[partido.id]
+        const resultadoGuardado = resMap[partido.id]
 
-        if (pred) {
+        const predResultado = getPrediccionResultado(partido, prediccion)
+        const predDefinicion = getPrediccionDefinicion(partido, prediccion)
+
+        const resultadoOficial = getResultadoOficial(partido, resultadoGuardado)
+        const definicionOficial = getDefinicionOficial(partido, resultadoGuardado)
+
+        if (predResultado && predDefinicion) {
           hechas += 1
         }
 
-        if (pred && res && pred === res.resultado) {
+        if (predResultado && resultadoOficial && predResultado === resultadoOficial) {
           puntos += 1
+          aciertosAvanza += 1
+        }
+
+        if (predDefinicion && definicionOficial && predDefinicion === definicionOficial) {
+          puntos += 1
+          aciertosDefinicion += 1
         }
       })
 
@@ -120,6 +186,8 @@ export default function TablaEliminatoriasPage() {
         hechas,
         faltantes,
         completo: faltantes === 0,
+        aciertosAvanza,
+        aciertosDefinicion,
       }
     })
 
@@ -127,6 +195,7 @@ export default function TablaEliminatoriasPage() {
 
     soloCompletos.sort((a, b) => {
       if (b.puntos !== a.puntos) return b.puntos - a.puntos
+      if (b.aciertosAvanza !== a.aciertosAvanza) return b.aciertosAvanza - a.aciertosAvanza
 
       return a.nombre.localeCompare(b.nombre)
     })
@@ -150,7 +219,19 @@ export default function TablaEliminatoriasPage() {
     )
   }
 
-  const partidosConResultado = Object.keys(resultados).length
+  const maxPuntos = ELIMINATORIAS.length * 2
+
+  const partidosConResultado = ELIMINATORIAS.filter((partido) => {
+    const resultadoGuardado = resultados[partido.id]
+    const resultadoOficial = getResultadoOficial(partido, resultadoGuardado)
+    const definicionOficial = getDefinicionOficial(partido, resultadoGuardado)
+
+    return Boolean(resultadoOficial && definicionOficial)
+  }).length
+
+  const primerPartido = ELIMINATORIAS[0]
+  const primerResultado = resultados[primerPartido?.id]
+  const primerDefinicion = getDefinicionOficial(primerPartido, primerResultado)
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
@@ -167,7 +248,7 @@ export default function TablaEliminatoriasPage() {
         </h1>
 
         <p className="text-white/55 mt-2">
-          Esta tabla es independiente de la fase de grupos. Solo aparecen quienes ya completaron sus predicciones de 16avos.
+          Esta tabla es independiente de la fase de grupos. Cada partido puede dar hasta 2 puntos.
         </p>
       </div>
 
@@ -183,8 +264,14 @@ export default function TablaEliminatoriasPage() {
         </p>
 
         <p className="text-white/45 text-sm mt-1">
-          Cada acierto vale 1 punto. Canadá ya cuenta como ganador del primer partido cerrado.
+          1 punto por atinar quién avanza y 1 punto por atinar cómo se definió: tiempo regular, tiempos extras o penales.
         </p>
+
+        {primerPartido?.resultadoOficial && (
+          <p className="text-white/45 text-sm mt-2">
+            Canadá ya cuenta como ganador del primer partido cerrado. Definición: {getLabelDefinicion(primerDefinicion)}.
+          </p>
+        )}
       </div>
 
       {participantes.length === 0 ? (
@@ -239,6 +326,10 @@ export default function TablaEliminatoriasPage() {
                   <p className="text-white/40 text-sm">
                     {ELIMINATORIAS.length}/{ELIMINATORIAS.length} predicciones hechas · completo
                   </p>
+
+                  <p className="text-white/30 text-xs mt-1">
+                    {p.aciertosAvanza} aciertos de ganador · {p.aciertosDefinicion} aciertos de definición
+                  </p>
                 </div>
               </div>
 
@@ -248,7 +339,7 @@ export default function TablaEliminatoriasPage() {
                 </p>
 
                 <p className="text-white/35 text-xs uppercase tracking-widest">
-                  puntos
+                  de {maxPuntos} pts
                 </p>
               </div>
             </div>
