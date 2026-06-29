@@ -1,39 +1,9 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
-import { FECHA_CIERRE, NOMBRE_CORTO } from '../lib/config'
-import { useState, useEffect } from 'react'
+import { NOMBRE_CORTO } from '../lib/config'
+import { useState } from 'react'
 
 function StatusBadge() {
-  const [now, setNow] = useState(new Date())
-
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(t)
-  }, [])
-
-  const isOpen = now < FECHA_CIERRE
-  const diff = FECHA_CIERRE - now
-
-  if (!isOpen) {
-    return (
-      <div
-        className="hidden sm:inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-widest"
-        style={{
-          background: 'rgba(244,167,185,0.10)',
-          color: '#F4A7B9',
-          border: '1px solid rgba(244,167,185,0.20)',
-        }}
-      >
-        ELIMINATORIAS
-      </div>
-    )
-  }
-
-  const d = Math.floor(diff / (1000 * 60 * 60 * 24))
-  const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-  const s = Math.floor((diff % (1000 * 60)) / 1000)
-
   return (
     <div
       className="hidden sm:inline-flex items-center rounded-full px-3 py-1 text-xs font-bold tracking-widest"
@@ -43,10 +13,7 @@ function StatusBadge() {
         border: '1px solid rgba(244,167,185,0.20)',
       }}
     >
-      {d > 0
-        ? `${d}d ${h}h`
-        : `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`}{' '}
-      · GRUPOS
+      ELIMINATORIAS
     </div>
   )
 }
@@ -63,7 +30,7 @@ export default function Layout({ children }) {
   }
 
   const navLinks = [
-    ...(user ? [{ to: '/octavos', label: 'Octavos', icon: '🏆' }] : []),
+    ...(user ? [{ to: '/16avos', label: '16avos', icon: '🏆' }] : []),
     { to: '/tabla-eliminatorias', label: 'Eliminatorias', icon: '🔥' },
     { to: '/partidos', label: 'Partidos', icon: '⚽' },
     { to: '/participantes', label: 'Participantes', icon: '' },
@@ -86,7 +53,7 @@ export default function Layout({ children }) {
       >
         <div className="max-w-6xl mx-auto px-4">
           <div className="h-16 flex items-center justify-between gap-4">
-            <Link to="/octavos" className="min-w-0">
+            <Link to="/16avos" className="min-w-0">
               <div className="flex items-center gap-3">
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center font-black"
