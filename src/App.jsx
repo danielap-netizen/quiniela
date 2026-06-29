@@ -30,7 +30,7 @@ function PublicOnlyRoute({ children }) {
 
   if (loading) return <Loader />
 
-  if (user) return <Navigate to="/mis-predicciones" replace />
+  if (user) return <Navigate to="/octavos" replace />
 
   return children
 }
@@ -63,7 +63,7 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/tabla" replace />} />
+          <Route path="/" element={<Navigate to="/octavos" replace />} />
 
           <Route
             path="/login"
@@ -84,22 +84,13 @@ export default function App() {
           />
 
           <Route
-            path="/mis-predicciones"
+            path="/octavos"
             element={
               <PrivateRoute>
                 <Layout>
-                  <MisPrediccionesPage />
+                  <OctavosPage />
                 </Layout>
               </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/tabla"
-            element={
-              <Layout>
-                <TablaPublicaPage />
-              </Layout>
             }
           />
 
@@ -109,6 +100,17 @@ export default function App() {
               <PrivateRoute>
                 <Layout>
                   <TablaEliminatoriasPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/mis-predicciones"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <MisPrediccionesPage />
                 </Layout>
               </PrivateRoute>
             }
@@ -129,17 +131,6 @@ export default function App() {
               <Layout>
                 <ParticipantesPage />
               </Layout>
-            }
-          />
-
-          <Route
-            path="/octavos"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <OctavosPage />
-                </Layout>
-              </PrivateRoute>
             }
           />
 
@@ -165,7 +156,16 @@ export default function App() {
             }
           />
 
-          <Route path="*" element={<Navigate to="/tabla" replace />} />
+          <Route
+            path="/tabla"
+            element={
+              <Layout>
+                <TablaPublicaPage />
+              </Layout>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/octavos" replace />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
