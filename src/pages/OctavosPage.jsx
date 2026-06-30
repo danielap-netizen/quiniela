@@ -398,4 +398,64 @@ export default function OctavosPage() {
           className="rounded-2xl p-5"
           style={{
             background: 'rgba(255,255,255,0.035)',
-            border: '1px solid
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <p
+            className="text-5xl font-black text-white leading-none"
+            style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+          >
+            {porJugar}
+          </p>
+
+          <p className="text-xs font-bold uppercase tracking-wide text-white/40 mt-1">
+            Por jugar
+          </p>
+        </div>
+      </div>
+
+      {/* TABLA COMPLETA */}
+      <TablaInicio participantes={participantes} />
+
+      {/* BOTÓN PRINCIPAL */}
+      <button
+        onClick={() => navigate('/predicciones-editar')}
+        className="w-full rounded-2xl px-5 py-4 mb-2.5 mt-5 flex items-center justify-between"
+        style={{
+          background: '#F4A7B9',
+          boxShadow: '0 4px 20px rgba(244,167,185,0.15)',
+        }}
+      >
+        <span className="font-bold text-base text-[#111F18]">
+          ✏️ Hacer mis predicciones
+        </span>
+        <span className="font-bold text-lg text-[#111F18]">→</span>
+      </button>
+
+      {/* BOTONES SECUNDARIOS */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <button
+          onClick={() => navigate('/predicciones-16avos')}
+          className="rounded-2xl px-4 py-4 text-center font-semibold text-white"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.09)',
+          }}
+        >
+          👀 Destapadas
+        </button>
+
+        <button
+          onClick={() => navigate('/resultados-16avos')}
+          className="rounded-2xl px-4 py-4 text-center font-semibold text-white"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.09)',
+          }}
+        >
+          ⚽ Resultados
+        </button>
+      </div>
+    </div>
+  )
+}
