@@ -374,7 +374,7 @@ function ResultadosTerminados({ resultados, aciertosPorPartido }) {
         Resultados
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {partidosTerminados.map((partido) => {
           const resultado = resultados[partido.id]
           const ganador = getResultadoOficial(partido, resultado)
