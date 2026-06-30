@@ -14,6 +14,7 @@ import ParticipantesPage from './pages/ParticipantesPage'
 import OctavosPage from './pages/OctavosPage'
 import AdminOctavosPage from './pages/AdminOctavosPage'
 import TablaEliminatoriasPage from './pages/TablaEliminatoriasPage'
+import PrediccionesEliminatoriasPage from './pages/PrediccionesEliminatoriasPage'
 
 function Loader() {
   return (
@@ -102,6 +103,17 @@ export default function App() {
               <PrivateRoute>
                 <Layout>
                   <TablaEliminatoriasPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/predicciones-16avos"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <PrediccionesEliminatoriasPage />
                 </Layout>
               </PrivateRoute>
             }
