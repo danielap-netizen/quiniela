@@ -11,6 +11,29 @@ const DEFINICIONES = [
   { value: 'PENALES', label: 'Penales' },
 ]
 
+async function leerTodo(tabla, columnas) {
+  let todas = []
+  let desde = 0
+  const tam = 1000
+
+  while (true) {
+    const { data, error } = await supabase
+      .from(tabla)
+      .select(columnas)
+      .range(desde, desde + tam - 1)
+
+    if (error || !data || data.length === 0) break
+
+    todas = todas.concat(data)
+
+    if (data.length < tam) break
+
+    desde += tam
+  }
+
+  return todas
+}
+
 function formatFecha(iso) {
   return format(new Date(iso), "EEE d MMM · HH:mm 'hrs'", { locale: es })
 }
@@ -542,24 +565,23 @@ export default function OctavosPage() {
 
     const [
       misPredicciones,
-      perfilesData,
-      todasPredicciones,
+      perfilesArr,
+      todasPredArr,
       resultadosData,
     ] = await Promise.all([
       supabase
         .from('predicciones')
         .select('*')
         .eq('user_id', user.id),
-      supabase
-        .from('profiles')
-        .select('id,nombre,email,pago'),
-      supabase
-        .from('predicciones')
-        .select('user_id,partido_id,resultado,definicion'),
+      leerTodo('profiles', 'id,nombre,email,pago'),
+      leerTodo('predicciones', 'user_id,partido_id,resultado,definicion'),
       supabase
         .from('resultados')
         .select('partido_id,resultado,definicion,goles_local,goles_visitante'),
     ])
+
+    const perfilesData = { data: perfilesArr }
+    const todasPredicciones = { data: todasPredArr }
 
     const misMap = {}
 
