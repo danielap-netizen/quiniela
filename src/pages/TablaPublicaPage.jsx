@@ -297,8 +297,14 @@ export default function TablaPublicaPage() {
   const load = useCallback(async () => {
     const { count } = await supabase.from('profiles').select('*',{count:'exact',head:true})
     setTotalReg(count || 0)
+
+    // Solo partidos de la fase de grupos (ignora eliminatorias como M73, M74...)
+    const idsGrupos = new Set(PARTIDOS.map(p => p.id))
+
     const { data: resData } = await supabase.from('resultados').select('partido_id, resultado, goles_local, goles_visitante, updated_at')
-    const resMap = {}; (resData || []).forEach(r => { resMap[r.partido_id] = r }); setResultados(resMap)
+    const resMap = {}
+    ;(resData || []).forEach(r => { if (idsGrupos.has(r.partido_id)) resMap[r.partido_id] = r })
+    setResultados(resMap)
 
     if (!isOpen) {
       const [predsData, profilesData] = await Promise.all([
@@ -309,6 +315,7 @@ export default function TablaPublicaPage() {
       const byUser = {}
       const porPartido = {}
       ;(predsData || []).forEach(p => {
+        if (!idsGrupos.has(p.partido_id)) return
         if (!byUser[p.user_id]) byUser[p.user_id] = {}
         byUser[p.user_id][p.partido_id] = p.resultado
         if (!porPartido[p.partido_id]) porPartido[p.partido_id] = { L: [], E: [], V: [] }
@@ -319,7 +326,7 @@ export default function TablaPublicaPage() {
       setTotalJugadores(Object.keys(byUser).length)
       const lista = Object.entries(byUser).map(([uid, preds]) => {
         let pts = 0
-        Object.entries(preds).forEach(([pid, pred]) => { if (resMap[pid] && resMap[pid].resultado === pred) pts++ })
+        Object.entries(preds).forEach(([pid, pred]) => { if (idsGrupos.has(pid) && resMap[pid] && resMap[pid].resultado === pred) pts++ })
         return { nombre: nombreMap[uid] || 'Participante', preds, pts }
       })
       const barajada = barajar(lista)
