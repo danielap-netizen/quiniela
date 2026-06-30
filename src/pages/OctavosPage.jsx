@@ -365,6 +365,9 @@ function ResultadosTerminados({ resultados, aciertosPorPartido }) {
 
   if (partidosTerminados.length === 0) return null
 
+  const jugados = partidosTerminados.length
+  const porJugar = OCTAVOS.length - jugados
+
   return (
     <div className="mb-8">
       <h2
@@ -373,6 +376,28 @@ function ResultadosTerminados({ resultados, aciertosPorPartido }) {
       >
         Resultados
       </h2>
+
+      <div className="flex gap-3 mb-5">
+        <div
+          className="flex-1 rounded-2xl px-5 py-3 text-center"
+          style={{ background: 'rgba(244,167,185,0.08)', border: '1px solid rgba(244,167,185,0.16)' }}
+        >
+          <p className="text-white font-black text-3xl m-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            {jugados}
+          </p>
+          <p className="text-[#F4A7B9] text-xs uppercase tracking-widest m-0">Jugados</p>
+        </div>
+
+        <div
+          className="flex-1 rounded-2xl px-5 py-3 text-center"
+          style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}
+        >
+          <p className="text-white font-black text-3xl m-0" style={{ fontFamily: "'Barlow Condensed', sans-serif" }}>
+            {porJugar}
+          </p>
+          <p className="text-white/40 text-xs uppercase tracking-widest m-0">Por jugar</p>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 gap-4">
         {partidosTerminados.map((partido) => {
@@ -477,6 +502,14 @@ function ResultadosTerminados({ resultados, aciertosPorPartido }) {
 function TablaInicio({ participantes }) {
   if (participantes.length === 0) return null
 
+  // Lugar por puntaje: empatados comparten lugar, el siguiente sube solo 1
+  const puntajesOrdenados = [...new Set(participantes.map((p) => p.puntos))].sort((a, b) => b - a)
+  const lugarDe = (pts) => puntajesOrdenados.indexOf(pts) + 1
+  const medallaDe = (pts) => {
+    const l = lugarDe(pts)
+    return l === 1 ? '🥇' : l === 2 ? '🥈' : l === 3 ? '🥉' : null
+  }
+
   return (
     <div className="mb-8">
       <h2
@@ -504,18 +537,18 @@ function TablaInicio({ participantes }) {
           >
             <div className="flex items-center gap-4 min-w-0">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center font-black"
+                className="w-10 h-10 rounded-full flex items-center justify-center font-black flex-shrink-0"
                 style={{
-                  background: index === 0 ? '#F4A7B9' : 'rgba(244,167,185,0.12)',
-                  color: index === 0 ? '#111F18' : '#F4A7B9',
+                  background: lugarDe(p.puntos) === 1 ? '#F4A7B9' : 'rgba(244,167,185,0.12)',
+                  color: lugarDe(p.puntos) === 1 ? '#111F18' : '#F4A7B9',
                 }}
               >
-                {index + 1}
+                {lugarDe(p.puntos)}
               </div>
 
               <div className="min-w-0">
                 <p className="text-white font-bold truncate">
-                  {nombreCorto(p.nombre)}
+                  {medallaDe(p.puntos) ? medallaDe(p.puntos) + ' ' : ''}{nombreCorto(p.nombre)}
                 </p>
 
                 <p className="text-white/40 text-sm">
