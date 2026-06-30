@@ -196,4 +196,14 @@ export default function Layout({ children }) {
 
       <footer
         className="border-t py-6"
-        style={{ borderColor:
+        style={{ borderColor: 'rgba(244,167,185,0.10)' }}
+      >
+        <div className="max-w-6xl mx-auto px-4">
+          <p className="text-center text-white/30 text-xs">
+            Mundial 2026 · Familia Pereyra Fernández · Seguimos con la fase de eliminatorias
+          </p>
+        </div>
+      </footer>
+    </div>
+  )
+}
