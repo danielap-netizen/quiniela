@@ -295,37 +295,54 @@ export default function OctavosPage() {
     <div className="max-w-3xl mx-auto px-4 py-8">
       {/* HERO */}
       <div
-        className="rounded-3xl p-6 sm:p-7 mb-5"
+        className="rounded-3xl p-7 sm:p-8 mb-5 text-center"
         style={{
-          background:
-            'radial-gradient(circle at top right, rgba(244,167,185,0.22), rgba(244,167,185,0.03) 65%)',
-          border: '1px solid rgba(244,167,185,0.2)',
+          background: '#111F18',
+          border: '1px solid rgba(255,255,255,0.06)',
         }}
       >
-        <p className="text-xs font-bold uppercase tracking-widest text-[#F8C5D3]">
-          🔥 Quiniela Mundial 2026 · Familia Pereyra Fernández
-        </p>
+        <div className="text-5xl leading-none mb-4">🌎</div>
 
         <h1
-          className="text-5xl font-black text-white mt-1.5 leading-none"
+          className="text-5xl font-black text-white leading-none"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
           Eliminatorias
         </h1>
 
         <div
-          className="inline-flex items-center gap-2 mt-3 px-3.5 py-1.5 rounded-full"
+          className="inline-block mt-4 px-6 py-2.5 rounded-full"
           style={{
-            background: 'rgba(244,167,185,0.15)',
-            border: '1px solid rgba(244,167,185,0.3)',
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
           }}
         >
+          <p className="text-[11px] uppercase tracking-widest text-white/50 m-0">
+            🔥 Quiniela Mundial 2026
+          </p>
+          <p className="text-[11px] uppercase tracking-wide text-white/40 m-0 mt-1">
+            Familia Pereyra Fernández
+          </p>
+        </div>
+
+        <div className="mt-3.5">
           <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: '#F4A7B9' }}
-          />
-          <span className="text-xs font-bold uppercase tracking-wide text-[#F8C5D3]">
-            Fase: 16avos de final
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full"
+            style={{
+              background: 'rgba(244,167,185,0.15)',
+              border: '1px solid rgba(244,167,185,0.35)',
+            }}
+          >
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ background: '#F4A7B9' }}
+            />
+            <span
+              className="text-[15px] font-bold uppercase tracking-wide text-[#F8C5D3]"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+            >
+              Fase: 16avos de final
+            </span>
           </span>
         </div>
       </div>
