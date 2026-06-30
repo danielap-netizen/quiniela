@@ -30,13 +30,11 @@ export default function Layout({ children }) {
   }
 
   const navLinks = [
-    ...(user ? [{ to: '/16avos', label: '16avos', icon: '🏆' }] : []),
-    { to: '/tabla-eliminatorias', label: 'Eliminatorias', icon: '🔥' },
-    ...(user ? [{ to: '/predicciones-16avos', label: 'Predicciones', icon: '👀' }] : []),
-    { to: '/partidos', label: 'Partidos', icon: '⚽' },
-    { to: '/participantes', label: 'Participantes', icon: '' },
-    ...(user ? [{ to: '/mis-predicciones', label: 'Mis picks', icon: '✏️' }] : []),
-    { to: '/tabla', label: 'Grupos', icon: '' },
+    ...(user ? [{ to: '/16avos', label: 'Eliminatorias', icon: '🏆' }] : []),
+    ...(user ? [{ to: '/predicciones-editar', label: 'Predicciones', icon: '✏️' }] : []),
+    ...(user ? [{ to: '/predicciones-16avos', label: 'Destapadas', icon: '👀' }] : []),
+    ...(user ? [{ to: '/resultados-16avos', label: 'Resultados', icon: '⚽' }] : []),
+    { to: '/tabla', label: 'Fase de grupos', icon: '' },
   ]
 
   return (
@@ -198,14 +196,4 @@ export default function Layout({ children }) {
 
       <footer
         className="border-t py-6"
-        style={{ borderColor: 'rgba(244,167,185,0.10)' }}
-      >
-        <div className="max-w-6xl mx-auto px-4">
-          <p className="text-center text-white/30 text-xs">
-            Mundial 2026 · Familia Pereyra Fernández · Seguimos con la fase de eliminatorias
-          </p>
-        </div>
-      </footer>
-    </div>
-  )
-}
+        style={{ borderColor:
