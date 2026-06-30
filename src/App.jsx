@@ -15,6 +15,8 @@ import OctavosPage from './pages/OctavosPage'
 import AdminOctavosPage from './pages/AdminOctavosPage'
 import TablaEliminatoriasPage from './pages/TablaEliminatoriasPage'
 import PrediccionesEliminatoriasPage from './pages/PrediccionesEliminatoriasPage'
+import PrediccionesEditablesPage from './pages/PrediccionesEditablesPage'
+import ResultadosEliminatoriasPage from './pages/ResultadosEliminatoriasPage'
 
 function Loader() {
   return (
@@ -96,6 +98,28 @@ export default function App() {
           />
 
           <Route path="/octavos" element={<Navigate to="/16avos" replace />} />
+
+          <Route
+            path="/predicciones-editar"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <PrediccionesEditablesPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/resultados-16avos"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <ResultadosEliminatoriasPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
 
           <Route
             path="/tabla-eliminatorias"
