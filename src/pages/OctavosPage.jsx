@@ -62,6 +62,83 @@ function getDeadline(partido) {
   return new Date(new Date(partido.fecha).getTime() - 60 * 60 * 1000)
 }
 
+function TablaInicio({ participantes }) {
+  if (participantes.length === 0) return null
+
+  const puntajesOrdenados = [...new Set(participantes.map((p) => p.puntos))].sort((a, b) => b - a)
+  const lugarDe = (pts) => puntajesOrdenados.indexOf(pts) + 1
+  const medallaDe = (pts) => {
+    const l = lugarDe(pts)
+    return l === 1 ? '🥇' : l === 2 ? '🥈' : l === 3 ? '🥉' : null
+  }
+
+  return (
+    <div className="mt-2">
+      <h2
+        className="text-2xl font-black text-white mb-3"
+        style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+      >
+        Tabla de participantes
+      </h2>
+
+      <div className="space-y-3">
+        {participantes.map((p) => (
+          <div
+            key={p.id}
+            className="rounded-2xl p-4 flex items-center justify-between gap-4"
+            style={{
+              background:
+                lugarDe(p.puntos) === 1
+                  ? 'rgba(244,167,185,0.14)'
+                  : 'rgba(255,255,255,0.04)',
+              border:
+                lugarDe(p.puntos) === 1
+                  ? '1px solid rgba(244,167,185,0.35)'
+                  : '1px solid rgba(255,255,255,0.08)',
+            }}
+          >
+            <div className="flex items-center gap-4 min-w-0">
+              <div
+                className="w-10 h-10 rounded-full flex items-center justify-center font-black flex-shrink-0"
+                style={{
+                  background: lugarDe(p.puntos) === 1 ? '#F4A7B9' : 'rgba(244,167,185,0.12)',
+                  color: lugarDe(p.puntos) === 1 ? '#111F18' : '#F4A7B9',
+                }}
+              >
+                {lugarDe(p.puntos)}
+              </div>
+
+              <div className="min-w-0">
+                <p className="text-white font-bold truncate">
+                  {medallaDe(p.puntos) ? medallaDe(p.puntos) + ' ' : ''}{nombreCorto(p.nombre)}
+                </p>
+
+                <p className="text-white/40 text-sm">
+                  {p.hechas}/{OCTAVOS.filter((o) => !o.bloqueado).length} predicciones hechas
+                </p>
+
+                <p className="text-white/35 text-xs mt-1">
+                  {p.aciertosAvanza} ganador · {p.aciertosDefinicion} definición
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <p className="text-[#F4A7B9] text-2xl font-black">
+                {p.puntos}
+              </p>
+
+              <p className="text-white/35 text-xs uppercase tracking-widest">
+                puntos
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function formatCuenta(ms) {
   if (ms <= 0) return null
   const totalMin = Math.floor(ms / 60000)
@@ -140,6 +217,7 @@ export default function OctavosPage() {
 
       let puntos = 0
       let aciertosAvanza = 0
+      let aciertosDefinicion = 0
       let hechas = 0
 
       OCTAVOS.forEach((partido) => {
@@ -163,6 +241,7 @@ export default function OctavosPage() {
 
         if (predDefinicion && definicionOficial && predDefinicion === definicionOficial) {
           puntos += 1
+          aciertosDefinicion += 1
         }
       })
 
@@ -172,6 +251,7 @@ export default function OctavosPage() {
         puntos,
         hechas,
         aciertosAvanza,
+        aciertosDefinicion,
       }
     })
 
@@ -203,8 +283,6 @@ export default function OctavosPage() {
 
   const jugados = OCTAVOS.filter((p) => getResultadoOficial(p, resultados[p.id])).length
   const porJugar = OCTAVOS.length - jugados
-
-  const lider = participantes[0] || null
 
   // Próximo partido: el primero (por fecha) que aún no se ha jugado
   const proximo = [...OCTAVOS]
@@ -320,103 +398,4 @@ export default function OctavosPage() {
           className="rounded-2xl p-5"
           style={{
             background: 'rgba(255,255,255,0.035)',
-            border: '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          <p
-            className="text-5xl font-black text-white leading-none"
-            style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-          >
-            {porJugar}
-          </p>
-
-          <p className="text-xs font-bold uppercase tracking-wide text-white/40 mt-1">
-            Por jugar
-          </p>
-        </div>
-      </div>
-
-      {/* LÍDER */}
-      {lider && (
-        <div
-          className="rounded-2xl p-4 mb-5 flex items-center gap-4"
-          style={{
-            background: 'rgba(244,167,185,0.08)',
-            border: '1px solid rgba(244,167,185,0.18)',
-          }}
-        >
-          <div
-            className="w-11 h-11 rounded-full flex items-center justify-center text-2xl flex-shrink-0"
-            style={{ background: 'rgba(244,167,185,0.18)' }}
-          >
-            🥇
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <p className="text-[10px] uppercase tracking-widest text-[#F4A7B9]/70">
-              Va a la cabeza
-            </p>
-
-            <p
-              className="text-lg font-black text-white truncate"
-              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-            >
-              {nombreCorto(lider.nombre)}
-            </p>
-          </div>
-
-          <div className="text-right flex-shrink-0">
-            <p
-              className="text-3xl font-black text-[#F4A7B9] leading-none"
-              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-            >
-              {lider.puntos}
-            </p>
-
-            <p className="text-[9px] uppercase text-white/35">puntos</p>
-          </div>
-        </div>
-      )}
-
-      {/* BOTÓN PRINCIPAL */}
-      <button
-        onClick={() => navigate('/predicciones-editar')}
-        className="w-full rounded-2xl px-5 py-4 mb-2.5 flex items-center justify-between"
-        style={{
-          background: '#F4A7B9',
-          boxShadow: '0 4px 20px rgba(244,167,185,0.15)',
-        }}
-      >
-        <span className="font-bold text-base text-[#111F18]">
-          ✏️ Hacer mis predicciones
-        </span>
-        <span className="font-bold text-lg text-[#111F18]">→</span>
-      </button>
-
-      {/* BOTONES SECUNDARIOS */}
-      <div className="grid grid-cols-2 gap-2.5">
-        <button
-          onClick={() => navigate('/tabla-eliminatorias')}
-          className="rounded-2xl px-4 py-4 text-center font-semibold text-white"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.09)',
-          }}
-        >
-          🏆 Tabla
-        </button>
-
-        <button
-          onClick={() => navigate('/resultados-16avos')}
-          className="rounded-2xl px-4 py-4 text-center font-semibold text-white"
-          style={{
-            background: 'rgba(255,255,255,0.04)',
-            border: '1px solid rgba(255,255,255,0.09)',
-          }}
-        >
-          ⚽ Resultados
-        </button>
-      </div>
-    </div>
-  )
-}
+            border: '1px solid
