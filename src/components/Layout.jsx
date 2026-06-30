@@ -32,6 +32,7 @@ export default function Layout({ children }) {
   const navLinks = [
     ...(user ? [{ to: '/16avos', label: '16avos', icon: '🏆' }] : []),
     { to: '/tabla-eliminatorias', label: 'Eliminatorias', icon: '🔥' },
+    ...(user ? [{ to: '/predicciones-16avos', label: 'Predicciones', icon: '👀' }] : []),
     { to: '/partidos', label: 'Partidos', icon: '⚽' },
     { to: '/participantes', label: 'Participantes', icon: '' },
     ...(user ? [{ to: '/mis-predicciones', label: 'Mis picks', icon: '✏️' }] : []),
