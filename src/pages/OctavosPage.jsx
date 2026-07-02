@@ -62,6 +62,73 @@ function getDeadline(partido) {
   return new Date(new Date(partido.fecha).getTime() - 60 * 60 * 1000)
 }
 
+function labelDefinicionCorta(value) {
+  if (value === 'REGULAR') return 'Tiempo regular'
+  if (value === 'EXTRAS') return 'Tiempos extras'
+  if (value === 'PENALES') return 'Penales'
+  return ''
+}
+
+function armarMensajeWhatsApp(participantes, resultados) {
+  const lineas = []
+  lineas.push('📊 Quiniela Mundial 2026 · Eliminatorias')
+  lineas.push('')
+
+  // Último resultado jugado (por fecha, el más reciente con resultado)
+  const jugados = OCTAVOS
+    .filter((p) => getResultadoOficial(p, resultados[p.id]))
+    .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+
+  if (jugados.length > 0) {
+    const p = jugados[0]
+    const res = resultados[p.id]
+    const ganador = getResultadoOficial(p, res)
+    const definicion = getDefinicionOficial(p, res)
+    const gl = getGolesLocal(p, res)
+    const gv = getGolesVisitante(p, res)
+    const ganadorNombre = ganador === 'L' ? p.local : p.visitante
+
+    lineas.push('⚽ Último resultado:')
+    if (gl != null && gv != null) {
+      lineas.push(`${p.localFlag} ${p.local} ${gl}-${gv} ${p.visitante} ${p.visitanteFlag}`)
+    } else {
+      lineas.push(`${p.localFlag} ${p.local} vs ${p.visitante} ${p.visitanteFlag}`)
+    }
+    lineas.push(`→ Avanzó ${ganadorNombre} (${labelDefinicionCorta(definicion)})`)
+    lineas.push('')
+  }
+
+  // Tabla completa
+  lineas.push('🏆 Tabla completa:')
+
+  const puntajesOrdenados = [...new Set(participantes.map((p) => p.puntos))].sort((a, b) => b - a)
+  const lugarDe = (pts) => puntajesOrdenados.indexOf(pts) + 1
+  const medallaDe = (pts) => {
+    const l = lugarDe(pts)
+    return l === 1 ? '🥇 ' : l === 2 ? '🥈 ' : l === 3 ? '🥉 ' : ''
+  }
+
+  participantes.forEach((p) => {
+    lineas.push(`${medallaDe(p.puntos)}${lugarDe(p.puntos)}. ${nombreCorto(p.nombre)} — ${p.puntos} pts`)
+  })
+
+  lineas.push('')
+  lineas.push('👉 Míralo completo aquí:')
+  lineas.push('https://quiniela-chi.vercel.app')
+
+  return lineas.join('\n')
+}
+
+function getGolesLocal(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) return partido.golesLocalOficial
+  return resultadoGuardado?.goles_local
+}
+
+function getGolesVisitante(partido, resultadoGuardado) {
+  if (partido.resultadoOficial) return partido.golesVisitanteOficial
+  return resultadoGuardado?.goles_visitante
+}
+
 function TablaInicio({ participantes }) {
   if (participantes.length === 0) return null
 
@@ -473,6 +540,26 @@ export default function OctavosPage() {
           ⚽ Resultados
         </button>
       </div>
+
+      {/* COMPARTIR EN WHATSAPP */}
+      {participantes.length > 0 && (
+        <button
+          onClick={() => {
+            const mensaje = armarMensajeWhatsApp(participantes, resultados)
+            const url = 'https://wa.me/?text=' + encodeURIComponent(mensaje)
+            window.open(url, '_blank')
+          }}
+          className="w-full rounded-2xl px-5 py-4 mt-2.5 flex items-center justify-center gap-2 font-bold"
+          style={{
+            background: 'rgba(37,211,102,0.15)',
+            border: '1px solid rgba(37,211,102,0.4)',
+            color: '#25D366',
+          }}
+        >
+          <span>💬</span>
+          <span>Compartir en WhatsApp</span>
+        </button>
+      )}
     </div>
   )
 }
