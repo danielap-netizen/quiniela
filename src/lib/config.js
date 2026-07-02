@@ -293,10 +293,109 @@ export const DIECISEISAVOS = [
   },
 ]
 
-// Estos alias evitan romper los archivos que todavía usan el nombre OCTAVOS.
-export const FECHA_CIERRE_OCTAVOS = FECHA_CIERRE_DIECISEISAVOS
-export const OCTAVOS = DIECISEISAVOS
+// ============================================================
+// ELIMINATORIAS · OCTAVOS DE FINAL
+// Mismos puntos: 1 por acertar quién avanza + 1 por la definición.
+// Los partidos "por definir" van bloqueados hasta tener equipos.
+// ============================================================
 
-export const ELIMINATORIAS = [...DIECISEISAVOS]
+export const FECHA_CIERRE_OCTAVOS_FINAL = new Date('2026-07-04T10:00:00-06:00')
+
+export const OCTAVOS_FINAL = [
+  {
+    id: 'M89',
+    fase: 'octavos',
+    local: 'Canadá',
+    visitante: 'Marruecos',
+    fecha: '2026-07-04T11:00:00-06:00',
+    ciudad: 'Houston Stadium',
+    localFlag: '🇨🇦',
+    visitanteFlag: '🇲🇦',
+  },
+  {
+    id: 'M90',
+    fase: 'octavos',
+    local: 'Paraguay',
+    visitante: 'Francia',
+    fecha: '2026-07-04T15:00:00-06:00',
+    ciudad: 'Filadelfia Stadium',
+    localFlag: '🇵🇾',
+    visitanteFlag: '🇫🇷',
+  },
+  {
+    id: 'M91',
+    fase: 'octavos',
+    local: 'Brasil',
+    visitante: 'Noruega',
+    fecha: '2026-07-05T14:00:00-06:00',
+    ciudad: 'New York / New Jersey Stadium',
+    localFlag: '🇧🇷',
+    visitanteFlag: '🇳🇴',
+  },
+  {
+    id: 'M92',
+    fase: 'octavos',
+    local: 'México',
+    visitante: 'Inglaterra',
+    fecha: '2026-07-05T18:00:00-06:00',
+    ciudad: 'Estadio Ciudad de México',
+    localFlag: '🇲🇽',
+    visitanteFlag: '🏴',
+  },
+  {
+    id: 'M93',
+    fase: 'octavos',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-06T13:00:00-06:00',
+    ciudad: 'Dallas Stadium',
+    localFlag: '⚽',
+    visitanteFlag: '⚽',
+    bloqueado: true,
+    notaResultado: 'Los equipos se definen con los resultados de 16avos.',
+  },
+  {
+    id: 'M94',
+    fase: 'octavos',
+    local: 'Estados Unidos',
+    visitante: 'Bélgica',
+    fecha: '2026-07-06T18:00:00-06:00',
+    ciudad: 'Seattle Stadium',
+    localFlag: '🇺🇸',
+    visitanteFlag: '🇧🇪',
+  },
+  {
+    id: 'M95',
+    fase: 'octavos',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-07T10:00:00-06:00',
+    ciudad: 'Atlanta Stadium',
+    localFlag: '⚽',
+    visitanteFlag: '⚽',
+    bloqueado: true,
+    notaResultado: 'Los equipos se definen con los resultados de 16avos.',
+  },
+  {
+    id: 'M96',
+    fase: 'octavos',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-07T14:00:00-06:00',
+    ciudad: 'Vancouver Stadium (BC Place)',
+    localFlag: '⚽',
+    visitanteFlag: '⚽',
+    bloqueado: true,
+    notaResultado: 'Los equipos se definen con los resultados de 16avos.',
+  },
+]
+
+// Estos alias evitan romper los archivos que todavía usan el nombre OCTAVOS.
+// OCTAVOS ahora incluye TODAS las fases de eliminatorias jugadas hasta ahora,
+// para que los puntos se sumen automáticamente (16avos + octavos + ...).
+export const FECHA_CIERRE_OCTAVOS = FECHA_CIERRE_DIECISEISAVOS
+export const OCTAVOS = [...DIECISEISAVOS, ...OCTAVOS_FINAL]
+
+export const ELIMINATORIAS = [...DIECISEISAVOS, ...OCTAVOS_FINAL]
 
 export const PUNTOS_POR_ACIERTO_ELIMINATORIAS = 1
