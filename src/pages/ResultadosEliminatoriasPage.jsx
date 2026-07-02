@@ -9,6 +9,24 @@ const DEFINICIONES = [
   { value: 'PENALES', label: 'Penales' },
 ]
 
+// Fases en orden, con su etiqueta para los separadores
+const FASES = [
+  { key: '16avos', label: '16avos de final' },
+  { key: 'octavos', label: 'Octavos de final' },
+  { key: 'cuartos', label: 'Cuartos de final' },
+  { key: 'semis', label: 'Semifinales' },
+  { key: 'final', label: 'Final' },
+]
+
+function labelFaseCorta(key) {
+  const f = FASES.find((x) => x.key === key)
+  return f ? f.label.replace(' de final', '') : '16avos'
+}
+
+function fasesPresentes(partidos) {
+  return FASES.filter((f) => partidos.some((p) => (p.fase || '16avos') === f.key))
+}
+
 async function leerTodo(tabla, columnas) {
   let todas = []
   let desde = 0
@@ -75,6 +93,100 @@ function fraseBanda(aciertos, total) {
   return 'Estuvo dividida la raza'
 }
 
+function TarjetaResultado({ partido, resultados, aciertosPorPartido }) {
+  const resultado = resultados[partido.id]
+  const ganador = getResultadoOficial(partido, resultado)
+  const definicion = getDefinicionOficial(partido, resultado)
+  const golesLocal = getGolesLocal(partido, resultado)
+  const golesVisitante = getGolesVisitante(partido, resultado)
+
+  const ganadorNombre =
+    ganador === 'L'
+      ? partido.local
+      : ganador === 'V'
+        ? partido.visitante
+        : ''
+
+  const info = aciertosPorPartido[partido.id] || { lista: [], totalConPred: 0 }
+  const aciertanGanador = info.lista.filter((g) => g.ganador)
+  const frase = fraseBanda(aciertanGanador.length, info.totalConPred)
+
+  return (
+    <div
+      className="rounded-2xl p-4"
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.08)',
+      }}
+    >
+      <p className="text-white/35 text-xs font-mono tracking-widest uppercase">
+        {partido.id} · {labelFaseCorta(partido.fase || '16avos')}
+      </p>
+
+      <p className="text-white font-bold mt-2">
+        {partido.localFlag} {partido.local} {golesLocal}-{golesVisitante} {partido.visitanteFlag} {partido.visitante}
+      </p>
+
+      <p className="text-[#F4A7B9] text-sm font-bold mt-2">
+        Avanzó {ganadorNombre} · {getLabelDefinicion(definicion)}
+      </p>
+
+      {info.totalConPred > 0 && (
+        <>
+          <div
+            className="mt-3 pt-3"
+            style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <p className="text-white/70 text-sm font-semibold m-0">
+              ✓ {aciertanGanador.length} de {info.totalConPred} le {aciertanGanador.length === 1 ? 'atinó' : 'atinaron'} al ganador
+            </p>
+
+            {frase && (
+              <p className="text-white/45 text-sm mt-1 mb-0">
+                {frase}
+              </p>
+            )}
+          </div>
+
+          {info.lista.length > 0 && (
+            <div className="mt-3 flex flex-col gap-1.5">
+              {info.lista.map((g, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between gap-2"
+                >
+                  <span className="text-sm text-white/80">
+                    {nombreCorto(g.nombre)}
+                  </span>
+
+                  <span className="flex items-center gap-1 flex-shrink-0">
+                    {g.ganador && (
+                      <span
+                        className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(244,167,185,0.18)', color: '#F8C5D3' }}
+                      >
+                        Ganador
+                      </span>
+                    )}
+                    {g.definicion && (
+                      <span
+                        className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(244,167,185,0.10)', color: 'rgba(248,197,211,0.8)' }}
+                      >
+                        Definición
+                      </span>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 function ResultadosTerminados({ resultados, aciertosPorPartido }) {
   const partidosTerminados = OCTAVOS.filter((partido) => {
     return Boolean(getResultadoOficial(partido, resultados[partido.id]))
@@ -115,102 +227,32 @@ function ResultadosTerminados({ resultados, aciertosPorPartido }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {partidosTerminados.map((partido) => {
-          const resultado = resultados[partido.id]
-          const ganador = getResultadoOficial(partido, resultado)
-          const definicion = getDefinicionOficial(partido, resultado)
-          const golesLocal = getGolesLocal(partido, resultado)
-          const golesVisitante = getGolesVisitante(partido, resultado)
-
-          const ganadorNombre =
-            ganador === 'L'
-              ? partido.local
-              : ganador === 'V'
-                ? partido.visitante
-                : ''
-
-          const info = aciertosPorPartido[partido.id] || { lista: [], totalConPred: 0 }
-          const aciertanGanador = info.lista.filter((g) => g.ganador)
-          const frase = fraseBanda(aciertanGanador.length, info.totalConPred)
-
-          return (
-            <div
-              key={partido.id}
-              className="rounded-2xl p-4"
-              style={{
-                background: 'rgba(255,255,255,0.04)',
-                border: '1px solid rgba(255,255,255,0.08)',
-              }}
+      {fasesPresentes(partidosTerminados).map((fase) => (
+        <div key={fase.key} className="mb-6">
+          <div className="flex items-center gap-3 mb-4">
+            <h2
+              className="text-2xl font-black text-white"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
             >
-              <p className="text-white/35 text-xs font-mono tracking-widest uppercase">
-                {partido.id} · 16avos
-              </p>
+              {fase.label}
+            </h2>
+            <div className="flex-1 h-px" style={{ background: 'rgba(244,167,185,0.2)' }} />
+          </div>
 
-              <p className="text-white font-bold mt-2">
-                {partido.localFlag} {partido.local} {golesLocal}-{golesVisitante} {partido.visitanteFlag} {partido.visitante}
-              </p>
-
-              <p className="text-[#F4A7B9] text-sm font-bold mt-2">
-                Avanzó {ganadorNombre} · {getLabelDefinicion(definicion)}
-              </p>
-
-              {info.totalConPred > 0 && (
-                <>
-                  <div
-                    className="mt-3 pt-3"
-                    style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}
-                  >
-                    <p className="text-white/70 text-sm font-semibold m-0">
-                      ✓ {aciertanGanador.length} de {info.totalConPred} le {aciertanGanador.length === 1 ? 'atinó' : 'atinaron'} al ganador
-                    </p>
-
-                    {frase && (
-                      <p className="text-white/45 text-sm mt-1 mb-0">
-                        {frase}
-                      </p>
-                    )}
-                  </div>
-
-                  {info.lista.length > 0 && (
-                    <div className="mt-3 flex flex-col gap-1.5">
-                      {info.lista.map((g, idx) => (
-                        <div
-                          key={idx}
-                          className="flex items-center justify-between gap-2"
-                        >
-                          <span className="text-sm text-white/80">
-                            {nombreCorto(g.nombre)}
-                          </span>
-
-                          <span className="flex items-center gap-1 flex-shrink-0">
-                            {g.ganador && (
-                              <span
-                                className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
-                                style={{ background: 'rgba(244,167,185,0.18)', color: '#F8C5D3' }}
-                              >
-                                Ganador
-                              </span>
-                            )}
-                            {g.definicion && (
-                              <span
-                                className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full"
-                                style={{ background: 'rgba(244,167,185,0.10)', color: 'rgba(248,197,211,0.8)' }}
-                              >
-                                Definición
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          )
-        })}
-      </div>
+          <div className="grid grid-cols-1 gap-4">
+            {partidosTerminados
+              .filter((p) => (p.fase || '16avos') === fase.key)
+              .map((partido) => (
+                <TarjetaResultado
+                  key={partido.id}
+                  partido={partido}
+                  resultados={resultados}
+                  aciertosPorPartido={aciertosPorPartido}
+                />
+              ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
