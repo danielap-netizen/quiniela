@@ -11,12 +11,25 @@ const DEFINICIONES = [
   { value: 'PENALES', label: 'Penales' },
 ]
 
+// Fases en orden, con su etiqueta para los separadores
+const FASES = [
+  { key: '16avos', label: '16avos de final' },
+  { key: 'octavos', label: 'Octavos de final' },
+  { key: 'cuartos', label: 'Cuartos de final' },
+  { key: 'semis', label: 'Semifinales' },
+  { key: 'final', label: 'Final' },
+]
+
+function fasesPresentes(partidos) {
+  return FASES.filter((f) => partidos.some((p) => (p.fase || '16avos') === f.key))
+}
+
 function formatFecha(iso) {
   return format(new Date(iso), "EEE d MMM · HH:mm 'hrs'", { locale: es })
 }
 
 function getDeadline(partido) {
-  return new Date(new Date(partido.fecha).getTime())
+  return new Date(new Date(partido.fecha).getTime() - 60 * 60 * 1000)
 }
 
 function puedeEditarPartido(partido, now) {
@@ -98,7 +111,7 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <p className="text-white/35 text-xs font-mono tracking-widest uppercase">
-            16avos · {partido.id}
+            {partido.id}
           </p>
 
           <p className="text-white/45 text-sm">
@@ -119,17 +132,25 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
             border: '1px solid rgba(244,167,185,0.18)',
           }}
         >
-          <p className="text-[#F4A7B9] text-sm font-bold">
-            Partido cerrado · {partido.local} {partido.golesLocalOficial}-{partido.golesVisitanteOficial} {partido.visitante}
-          </p>
+          {partido.resultadoOficial ? (
+            <>
+              <p className="text-[#F4A7B9] text-sm font-bold">
+                Partido cerrado · {partido.local} {partido.golesLocalOficial}-{partido.golesVisitanteOficial} {partido.visitante}
+              </p>
 
-          <p className="text-white/50 text-sm mt-1">
-            {partido.notaResultado || `Avanzó ${ganadorOficial}.`}
-          </p>
+              <p className="text-white/50 text-sm mt-1">
+                {partido.notaResultado || `Avanzó ${ganadorOficial}.`}
+              </p>
 
-          <p className="text-white/40 text-sm mt-1">
-            Definición: {getLabelDefinicion(definicionInicial)}
-          </p>
+              <p className="text-white/40 text-sm mt-1">
+                Definición: {getLabelDefinicion(definicionInicial)}
+              </p>
+            </>
+          ) : (
+            <p className="text-white/50 text-sm">
+              {partido.notaResultado || 'Este partido aún no se puede predecir.'}
+            </p>
+          )}
         </div>
       )}
 
@@ -266,7 +287,7 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
         ) : (
           <p className="text-[#F4A7B9] text-sm font-bold">
             {partido.bloqueado
-              ? 'Resultado definido'
+              ? (partido.resultadoOficial ? 'Resultado definido' : 'Aún no disponible')
               : prediccion
                 ? '✓ Guardado'
                 : 'Cerrado'}
@@ -396,7 +417,7 @@ export default function PrediccionesEditablesPage() {
         </h1>
 
         <p className="text-white/55 mt-2">
-          Elige quién avanza y cómo se define cada partido de 16avos.
+          Elige quién avanza y cómo se define cada partido.
         </p>
       </div>
 
@@ -415,7 +436,7 @@ export default function PrediccionesEditablesPage() {
 
             <p className="text-white/45 text-sm">
               {faltantes === 0
-                ? '✓ Ya completaste tus predicciones de 16avos.'
+                ? '✓ Ya completaste tus predicciones.'
                 : `Te faltan ${faltantes} ${faltantes === 1 ? 'partido' : 'partidos'} por completar.`}
             </p>
           </div>
@@ -446,14 +467,28 @@ export default function PrediccionesEditablesPage() {
         </div>
       </div>
 
-      {OCTAVOS.map((partido) => (
-        <DieciseisavosCard
-          key={partido.id}
-          partido={partido}
-          prediccion={preds[partido.id]}
-          onSave={handleSave}
-          now={now}
-        />
+      {fasesPresentes(OCTAVOS).map((fase) => (
+        <div key={fase.key} className="mb-6">
+          <div className="flex items-center gap-3 mb-4 mt-2">
+            <h2
+              className="text-2xl font-black text-white"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+            >
+              {fase.label}
+            </h2>
+            <div className="flex-1 h-px" style={{ background: 'rgba(244,167,185,0.2)' }} />
+          </div>
+
+          {OCTAVOS.filter((p) => (p.fase || '16avos') === fase.key).map((partido) => (
+            <DieciseisavosCard
+              key={partido.id}
+              partido={partido}
+              prediccion={preds[partido.id]}
+              onSave={handleSave}
+              now={now}
+            />
+          ))}
+        </div>
       ))}
     </div>
   )
