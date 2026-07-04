@@ -117,10 +117,6 @@ export const PUNTOS_POR_ACIERTO = 1
 
 // ============================================================
 // ELIMINATORIAS · 16AVOS
-// Quiniela separada de fase de grupos.
-// Cada acierto vale 1 punto.
-// L = avanza el equipo de la izquierda
-// V = avanza el equipo de la derecha
 // ============================================================
 
 export const FECHA_CIERRE_DIECISEISAVOS = new Date('2026-06-28T12:00:00-06:00')
@@ -295,8 +291,6 @@ export const DIECISEISAVOS = [
 
 // ============================================================
 // ELIMINATORIAS · OCTAVOS DE FINAL
-// Mismos puntos: 1 por acertar quién avanza + 1 por la definición.
-// Los partidos "por definir" van bloqueados hasta tener equipos.
 // ============================================================
 
 export const FECHA_CIERRE_OCTAVOS_FINAL = new Date('2026-07-04T10:00:00-06:00')
@@ -399,3 +393,46 @@ export const OCTAVOS = [...DIECISEISAVOS, ...OCTAVOS_FINAL]
 export const ELIMINATORIAS = [...DIECISEISAVOS, ...OCTAVOS_FINAL]
 
 export const PUNTOS_POR_ACIERTO_ELIMINATORIAS = 1
+
+// ============================================================
+// HELPERS COMPARTIDOS DE ELIMINATORIAS
+// ============================================================
+
+// Cierre de predicciones de un partido: a la hora EXACTA de inicio.
+export function getCierre(partido) {
+  return new Date(partido.fecha)
+}
+
+// Mezcla los equipos definidos desde el admin (tabla equipos_partidos)
+// encima de los partidos del config. Si un partido "por definir" recibe
+// equipos, se le quita el bloqueo para que se abra a predicciones.
+export function aplicarEquipos(partidos, equiposMap) {
+  if (!equiposMap) return partidos
+
+  return partidos.map((p) => {
+    const eq = equiposMap[p.id]
+    if (!eq) return p
+
+    // Si tiene resultado oficial fijo, no lo tocamos (ya está cerrado).
+    if (p.resultadoOficial) return { ...p, ...limpiarEquipos(eq) }
+
+    return {
+      ...p,
+      local: eq.local || p.local,
+      visitante: eq.visitante || p.visitante,
+      localFlag: eq.local_flag || p.localFlag,
+      visitanteFlag: eq.visitante_flag || p.visitanteFlag,
+      // Al tener equipos reales, se desbloquea (respeta el cierre por hora).
+      bloqueado: false,
+    }
+  })
+}
+
+function limpiarEquipos(eq) {
+  return {
+    local: eq.local,
+    visitante: eq.visitante,
+    localFlag: eq.local_flag,
+    visitanteFlag: eq.visitante_flag,
+  }
+}
