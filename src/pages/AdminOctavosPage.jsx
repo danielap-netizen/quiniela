@@ -458,7 +458,7 @@ export default function AdminOctavosPage() {
     const [resData, eqData] = await Promise.all([
       supabase
         .from('resultados')
-        .select('id,partido_id,resultado,definicion,goles_local,goles_visitante'),
+        .select('partido_id,resultado,definicion,goles_local,goles_visitante'),
       supabase
         .from('equipos_partidos')
         .select('partido_id,local,visitante,local_flag,visitante_flag'),
@@ -484,41 +484,19 @@ export default function AdminOctavosPage() {
   }, [cargarDatos])
 
   const handleSave = async (partido, payload) => {
-    const existing = resultados[partido.id]
-
-    if (existing?.id) {
-      const { data, error } = await supabase
-        .from('resultados')
-        .update({
+    const { data, error } = await supabase
+      .from('resultados')
+      .upsert(
+        {
+          partido_id: partido.id,
           resultado: payload.resultado,
           definicion: payload.definicion,
           goles_local: payload.goles_local,
           goles_visitante: payload.goles_visitante,
           updated_at: new Date().toISOString(),
-        })
-        .eq('id', existing.id)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      setResultados((prev) => ({
-        ...prev,
-        [partido.id]: data,
-      }))
-
-      return
-    }
-
-    const { data, error } = await supabase
-      .from('resultados')
-      .insert({
-        partido_id: partido.id,
-        resultado: payload.resultado,
-        definicion: payload.definicion,
-        goles_local: payload.goles_local,
-        goles_visitante: payload.goles_visitante,
-      })
+        },
+        { onConflict: 'partido_id' }
+      )
       .select()
       .single()
 
@@ -608,76 +586,3 @@ export default function AdminOctavosPage() {
       </div>
 
       {/* SECCIÓN: DEFINIR EQUIPOS */}
-      {porDefinir.length > 0 && (
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-4">
-            <h2
-              className="text-2xl font-black text-white"
-              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-            >
-              Definir equipos
-            </h2>
-            <div className="flex-1 h-px" style={{ background: 'rgba(244,167,185,0.2)' }} />
-          </div>
-
-          <div
-            className="rounded-2xl p-4 mb-4"
-            style={{
-              background: 'rgba(244,167,185,0.08)',
-              border: '1px solid rgba(244,167,185,0.16)',
-            }}
-          >
-            <p className="text-white/60 text-sm">
-              Estos partidos aún no tienen equipos. Al escribir los equipos y guardar, el partido se abre automáticamente para que todos puedan predecir.
-            </p>
-          </div>
-
-          {porDefinir.map((partido) => (
-            <DefinirEquiposCard
-              key={partido.id}
-              partido={partido}
-              equiposGuardados={equipos[partido.id]}
-              onSaveEquipos={handleSaveEquipos}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* SECCIÓN: RESULTADOS */}
-      <div className="flex items-center gap-3 mb-4">
-        <h2
-          className="text-2xl font-black text-white"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
-        >
-          Resultados
-        </h2>
-        <div className="flex-1 h-px" style={{ background: 'rgba(244,167,185,0.2)' }} />
-      </div>
-
-      <div
-        className="rounded-2xl p-5 mb-6"
-        style={{
-          background: 'rgba(244,167,185,0.08)',
-          border: '1px solid rgba(244,167,185,0.16)',
-        }}
-      >
-        <p className="text-white font-bold">
-          Resultados cargados: {resultadosCargados}/{OCTAVOS.length}
-        </p>
-
-        <p className="text-white/45 text-sm mt-1">
-          Cada partido puede dar hasta 2 puntos: 1 por quién avanzó y 1 por cómo avanzó.
-        </p>
-      </div>
-
-      {OCTAVOS.map((partido) => (
-        <AdminPartidoCard
-          key={partido.id}
-          partido={partido}
-          resultadoGuardado={resultados[partido.id]}
-          onSave={handleSave}
-        />
-      ))}
-    </div>
-  )
-}
