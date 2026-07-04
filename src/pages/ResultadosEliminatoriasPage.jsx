@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
-import { OCTAVOS } from '../lib/config'
+import { OCTAVOS, aplicarEquipos } from '../lib/config'
 
 const DEFINICIONES = [
   { value: 'REGULAR', label: 'Tiempo regular' },
@@ -187,8 +187,8 @@ function TarjetaResultado({ partido, resultados, aciertosPorPartido }) {
   )
 }
 
-function ResultadosTerminados({ resultados, aciertosPorPartido }) {
-  const partidosTerminados = OCTAVOS.filter((partido) => {
+function ResultadosTerminados({ partidos, resultados, aciertosPorPartido }) {
+  const partidosTerminados = partidos.filter((partido) => {
     return Boolean(getResultadoOficial(partido, resultados[partido.id]))
   })
 
@@ -201,7 +201,7 @@ function ResultadosTerminados({ resultados, aciertosPorPartido }) {
   }
 
   const jugados = partidosTerminados.length
-  const porJugar = OCTAVOS.length - jugados
+  const porJugar = partidos.length - jugados
 
   return (
     <div className="mb-8">
@@ -263,17 +263,27 @@ export default function ResultadosEliminatoriasPage() {
   const [loading, setLoading] = useState(true)
   const [resultados, setResultados] = useState({})
   const [aciertosPorPartido, setAciertosPorPartido] = useState({})
+  const [equipos, setEquipos] = useState({})
 
   const cargarTodo = useCallback(async () => {
     if (!user) return
 
-    const [perfilesArr, todasPredArr, resultadosData] = await Promise.all([
+    const [perfilesArr, todasPredArr, resultadosData, equiposData] = await Promise.all([
       leerTodo('profiles', 'id,nombre,email'),
       leerTodo('predicciones', 'user_id,partido_id,resultado,definicion'),
       supabase
         .from('resultados')
         .select('partido_id,resultado,definicion,goles_local,goles_visitante'),
+      supabase
+        .from('equipos_partidos')
+        .select('partido_id,local,visitante,local_flag,visitante_flag'),
     ])
+
+    const eqMap = {}
+    ;(equiposData.data || []).forEach((e) => {
+      eqMap[e.partido_id] = e
+    })
+    setEquipos(eqMap)
 
     const resMap = {}
 
@@ -363,6 +373,8 @@ export default function ResultadosEliminatoriasPage() {
     )
   }
 
+  const partidos = aplicarEquipos(OCTAVOS, equipos)
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-10">
       <div className="mb-8">
@@ -382,7 +394,7 @@ export default function ResultadosEliminatoriasPage() {
         </p>
       </div>
 
-      <ResultadosTerminados resultados={resultados} aciertosPorPartido={aciertosPorPartido} />
+      <ResultadosTerminados partidos={partidos} resultados={resultados} aciertosPorPartido={aciertosPorPartido} />
     </div>
   )
 }
