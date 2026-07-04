@@ -19,6 +19,166 @@ function getLabelDefinicion(value) {
   return DEFINICIONES.find((d) => d.value === value)?.label || ''
 }
 
+// ============================================================
+// Tarjeta para DEFINIR EQUIPOS de un partido "Por definir"
+// Guarda en la tabla equipos_partidos.
+// ============================================================
+function DefinirEquiposCard({ partido, equiposGuardados, onSaveEquipos }) {
+  const [local, setLocal] = useState(equiposGuardados?.local || '')
+  const [visitante, setVisitante] = useState(equiposGuardados?.visitante || '')
+  const [localFlag, setLocalFlag] = useState(equiposGuardados?.local_flag || '')
+  const [visitanteFlag, setVisitanteFlag] = useState(equiposGuardados?.visitante_flag || '')
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    setLocal(equiposGuardados?.local || '')
+    setVisitante(equiposGuardados?.visitante || '')
+    setLocalFlag(equiposGuardados?.local_flag || '')
+    setVisitanteFlag(equiposGuardados?.visitante_flag || '')
+  }, [equiposGuardados])
+
+  const completo = local.trim() && visitante.trim()
+
+  const handleSave = async () => {
+    if (!completo) return
+
+    setSaving(true)
+
+    try {
+      await onSaveEquipos(partido, {
+        local: local.trim(),
+        visitante: visitante.trim(),
+        local_flag: localFlag.trim() || '⚽',
+        visitante_flag: visitanteFlag.trim() || '⚽',
+      })
+
+      setSaved(true)
+      setTimeout(() => setSaved(false), 1500)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      className="rounded-2xl p-5 mb-4"
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: '1px solid rgba(255,255,255,0.10)',
+      }}
+    >
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <p className="text-white/35 text-xs font-mono tracking-widest uppercase">
+            {partido.id}
+          </p>
+
+          <p className="text-white/45 text-sm mt-1">
+            {partido.ciudad} · {formatFecha(partido.fecha)}
+          </p>
+        </div>
+
+        {equiposGuardados ? (
+          <span className="text-xs font-bold text-[#F4A7B9]">
+            Equipos definidos
+          </span>
+        ) : (
+          <span className="text-xs font-bold text-white/40">
+            Por definir
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <p className="text-white/45 text-sm mb-2">Equipo local</p>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={localFlag}
+              onChange={(e) => setLocalFlag(e.target.value)}
+              placeholder="🇧🇷"
+              className="w-16 rounded-xl px-3 py-3 text-white text-center outline-none"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.10)',
+              }}
+            />
+
+            <input
+              type="text"
+              value={local}
+              onChange={(e) => setLocal(e.target.value)}
+              placeholder="Nombre del equipo"
+              className="flex-1 min-w-0 rounded-xl px-4 py-3 text-white outline-none"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.10)',
+              }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <p className="text-white/45 text-sm mb-2">Equipo visitante</p>
+
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={visitanteFlag}
+              onChange={(e) => setVisitanteFlag(e.target.value)}
+              placeholder="🇦🇷"
+              className="w-16 rounded-xl px-3 py-3 text-white text-center outline-none"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.10)',
+              }}
+            />
+
+            <input
+              type="text"
+              value={visitante}
+              onChange={(e) => setVisitante(e.target.value)}
+              placeholder="Nombre del equipo"
+              className="flex-1 min-w-0 rounded-xl px-4 py-3 text-white outline-none"
+              style={{
+                background: 'rgba(255,255,255,0.04)',
+                border: '1px solid rgba(255,255,255,0.10)',
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
+        <p className="text-white/40 text-sm">
+          {completo
+            ? `${localFlag || '⚽'} ${local} vs ${visitante} ${visitanteFlag || '⚽'}`
+            : 'Escribe ambos equipos. La bandera es opcional.'}
+        </p>
+
+        <button
+          onClick={handleSave}
+          disabled={!completo || saving}
+          className="rounded-xl px-5 py-3 text-sm font-bold disabled:opacity-40"
+          style={{
+            background: '#F4A7B9',
+            color: '#111F18',
+          }}
+        >
+          {saving
+            ? 'Guardando...'
+            : saved
+              ? '✓ Guardado'
+              : 'Guardar equipos'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function AdminPartidoCard({ partido, resultadoGuardado, onSave }) {
   const resultadoInicial =
     resultadoGuardado?.resultado ||
@@ -103,7 +263,7 @@ function AdminPartidoCard({ partido, resultadoGuardado, onSave }) {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <div>
           <p className="text-white/35 text-xs font-mono tracking-widest uppercase">
-            16avos · {partido.id}
+            {partido.id}
           </p>
 
           <h2 className="text-white text-xl font-black mt-1">
@@ -289,28 +449,39 @@ export default function AdminOctavosPage() {
   const { user } = useAuth()
 
   const [resultados, setResultados] = useState({})
+  const [equipos, setEquipos] = useState({})
   const [loading, setLoading] = useState(true)
 
   const esAdmin = user?.email === ADMIN_EMAIL
 
-  const cargarResultados = useCallback(async () => {
-    const { data } = await supabase
-      .from('resultados')
-      .select('id,partido_id,resultado,definicion,goles_local,goles_visitante')
+  const cargarDatos = useCallback(async () => {
+    const [resData, eqData] = await Promise.all([
+      supabase
+        .from('resultados')
+        .select('id,partido_id,resultado,definicion,goles_local,goles_visitante'),
+      supabase
+        .from('equipos_partidos')
+        .select('partido_id,local,visitante,local_flag,visitante_flag'),
+    ])
 
     const map = {}
-
-    ;(data || []).forEach((r) => {
+    ;(resData.data || []).forEach((r) => {
       map[r.partido_id] = r
     })
-
     setResultados(map)
+
+    const eqMap = {}
+    ;(eqData.data || []).forEach((e) => {
+      eqMap[e.partido_id] = e
+    })
+    setEquipos(eqMap)
+
     setLoading(false)
   }, [])
 
   useEffect(() => {
-    cargarResultados()
-  }, [cargarResultados])
+    cargarDatos()
+  }, [cargarDatos])
 
   const handleSave = async (partido, payload) => {
     const existing = resultados[partido.id]
@@ -359,6 +530,28 @@ export default function AdminOctavosPage() {
     }))
   }
 
+  const handleSaveEquipos = async (partido, payload) => {
+    const { data, error } = await supabase
+      .from('equipos_partidos')
+      .upsert({
+        partido_id: partido.id,
+        local: payload.local,
+        visitante: payload.visitante,
+        local_flag: payload.local_flag,
+        visitante_flag: payload.visitante_flag,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    setEquipos((prev) => ({
+      ...prev,
+      [partido.id]: data,
+    }))
+  }
+
   if (!esAdmin) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10">
@@ -366,7 +559,7 @@ export default function AdminOctavosPage() {
           className="text-4xl font-black text-white"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
-          Admin 16avos
+          Admin eliminatorias
         </h1>
 
         <p className="text-white/50 mt-3">
@@ -380,11 +573,16 @@ export default function AdminOctavosPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-10">
         <p className="text-white/50">
-          Cargando admin de 16avos...
+          Cargando admin de eliminatorias...
         </p>
       </div>
     )
   }
+
+  // Partidos "por definir": bloqueados y sin resultado oficial
+  const porDefinir = OCTAVOS.filter(
+    (p) => p.bloqueado && !p.resultadoOficial
+  )
 
   const resultadosCargados = OCTAVOS.filter((partido) => {
     return resultados[partido.id] || partido.resultadoOficial
@@ -401,12 +599,59 @@ export default function AdminOctavosPage() {
           className="text-4xl sm:text-5xl font-black text-white mt-2"
           style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
         >
-          Resultados de 16avos
+          Eliminatorias
         </h1>
 
         <p className="text-white/55 mt-2">
-          Captura quién avanzó, el marcador y si el partido se definió en tiempo regular, tiempos extras o penales.
+          Define los equipos de los partidos pendientes y captura los resultados.
         </p>
+      </div>
+
+      {/* SECCIÓN: DEFINIR EQUIPOS */}
+      {porDefinir.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-4">
+            <h2
+              className="text-2xl font-black text-white"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+            >
+              Definir equipos
+            </h2>
+            <div className="flex-1 h-px" style={{ background: 'rgba(244,167,185,0.2)' }} />
+          </div>
+
+          <div
+            className="rounded-2xl p-4 mb-4"
+            style={{
+              background: 'rgba(244,167,185,0.08)',
+              border: '1px solid rgba(244,167,185,0.16)',
+            }}
+          >
+            <p className="text-white/60 text-sm">
+              Estos partidos aún no tienen equipos. Al escribir los equipos y guardar, el partido se abre automáticamente para que todos puedan predecir.
+            </p>
+          </div>
+
+          {porDefinir.map((partido) => (
+            <DefinirEquiposCard
+              key={partido.id}
+              partido={partido}
+              equiposGuardados={equipos[partido.id]}
+              onSaveEquipos={handleSaveEquipos}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* SECCIÓN: RESULTADOS */}
+      <div className="flex items-center gap-3 mb-4">
+        <h2
+          className="text-2xl font-black text-white"
+          style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+        >
+          Resultados
+        </h2>
+        <div className="flex-1 h-px" style={{ background: 'rgba(244,167,185,0.2)' }} />
       </div>
 
       <div
