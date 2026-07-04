@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { OCTAVOS } from '../lib/config'
+import { OCTAVOS, aplicarEquipos } from '../lib/config'
 
 async function leerTodo(tabla, columnas) {
   let todas = []
@@ -63,14 +63,18 @@ function fasesPresentes(partidos) {
 export default function PrediccionesEliminatoriasPage() {
   const [predsPorPartido, setPredsPorPartido] = useState({})
   const [totalJugadores, setTotalJugadores] = useState(0)
+  const [equipos, setEquipos] = useState({})
   const [loading, setLoading] = useState(true)
 
   const cargar = useCallback(async () => {
     setLoading(true)
 
-    const [profiles, predicciones] = await Promise.all([
+    const [profiles, predicciones, equiposData] = await Promise.all([
       leerTodo('profiles', 'id,nombre,email'),
       leerTodo('predicciones', 'user_id,partido_id,resultado,definicion'),
+      supabase
+        .from('equipos_partidos')
+        .select('partido_id,local,visitante,local_flag,visitante_flag'),
     ])
 
     const nombreMap = {}
@@ -102,8 +106,14 @@ export default function PrediccionesEliminatoriasPage() {
       usuariosConPred[p.user_id] = true
     })
 
+    const eqMap = {}
+    ;(equiposData.data || []).forEach((e) => {
+      eqMap[e.partido_id] = e
+    })
+
     setPredsPorPartido(porPartido)
     setTotalJugadores(Object.keys(usuariosConPred).length)
+    setEquipos(eqMap)
     setLoading(false)
   }, [])
 
@@ -118,6 +128,8 @@ export default function PrediccionesEliminatoriasPage() {
       </div>
     )
   }
+
+  const partidos = aplicarEquipos(OCTAVOS, equipos)
 
   const renderTarjeta = (partido) => {
     const votos = predsPorPartido[partido.id] || { L: [], V: [] }
@@ -233,7 +245,7 @@ export default function PrediccionesEliminatoriasPage() {
         </p>
       </div>
 
-      {fasesPresentes(OCTAVOS).map((fase) => (
+      {fasesPresentes(partidos).map((fase) => (
         <div key={fase.key} className="mb-8">
           <div className="flex items-center gap-3 mb-4">
             <h2
@@ -246,7 +258,7 @@ export default function PrediccionesEliminatoriasPage() {
           </div>
 
           <div className="space-y-4">
-            {OCTAVOS.filter((p) => (p.fase || '16avos') === fase.key).map((partido) => renderTarjeta(partido))}
+            {partidos.filter((p) => (p.fase || '16avos') === fase.key).map((partido) => renderTarjeta(partido))}
           </div>
         </div>
       ))}
