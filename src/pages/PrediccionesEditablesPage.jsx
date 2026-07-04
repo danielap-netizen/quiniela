@@ -24,6 +24,11 @@ function fasesPresentes(partidos) {
   return FASES.filter((f) => partidos.some((p) => (p.fase || '16avos') === f.key))
 }
 
+function labelFaseCorta(key) {
+  const f = FASES.find((x) => x.key === key)
+  return f ? f.label.replace(' de final', '') : '16avos'
+}
+
 function formatFecha(iso) {
   return format(new Date(iso), "EEE d MMM · HH:mm 'hrs'", { locale: es })
 }
@@ -111,7 +116,7 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
       <div className="flex items-center justify-between gap-3 mb-4">
         <div>
           <p className="text-white/35 text-xs font-mono tracking-widest uppercase">
-            16avos · {partido.id}
+            {labelFaseCorta(partido.fase || '16avos')} · {partido.id}
           </p>
 
           <p className="text-white/45 text-sm">
@@ -124,7 +129,7 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
         </p>
       </div>
 
-      {partido.bloqueado && (
+      {partido.bloqueado && partido.resultadoOficial && (
         <div
           className="rounded-xl p-3 mb-4"
           style={{
@@ -142,6 +147,24 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
 
           <p className="text-white/40 text-sm mt-1">
             Definición: {getLabelDefinicion(definicionInicial)}
+          </p>
+        </div>
+      )}
+
+      {partido.bloqueado && !partido.resultadoOficial && (
+        <div
+          className="rounded-xl p-3 mb-4"
+          style={{
+            background: 'rgba(255,255,255,0.04)',
+            border: '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <p className="text-white/60 text-sm font-bold">
+            Aún no disponible
+          </p>
+
+          <p className="text-white/45 text-sm mt-1">
+            {partido.notaResultado || 'Los equipos se definen más adelante.'}
           </p>
         </div>
       )}
@@ -279,7 +302,9 @@ function DieciseisavosCard({ partido, prediccion, onSave, now }) {
         ) : (
           <p className="text-[#F4A7B9] text-sm font-bold">
             {partido.bloqueado
-              ? 'Resultado definido'
+              ? partido.resultadoOficial
+                ? 'Resultado definido'
+                : 'Aún no disponible'
               : prediccion
                 ? '✓ Guardado'
                 : 'Cerrado'}
