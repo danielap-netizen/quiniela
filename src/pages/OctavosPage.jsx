@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { supabase } from '../lib/supabase'
-import { OCTAVOS } from '../lib/config'
+import { OCTAVOS, getCierre, aplicarEquipos } from '../lib/config'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -59,7 +59,7 @@ function nombreCorto(nombre) {
 }
 
 function getDeadline(partido) {
-  return new Date(new Date(partido.fecha).getTime() - 60 * 60 * 1000)
+  return getCierre(partido)
 }
 
 function labelDefinicionCorta(value) {
@@ -227,6 +227,7 @@ export default function OctavosPage() {
   const [now, setNow] = useState(new Date())
   const [resultados, setResultados] = useState({})
   const [participantes, setParticipantes] = useState([])
+  const [equipos, setEquipos] = useState({})
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60000)
@@ -237,13 +238,22 @@ export default function OctavosPage() {
   const cargarTodo = useCallback(async () => {
     if (!user) return
 
-    const [perfilesArr, todasPredArr, resultadosData] = await Promise.all([
+    const [perfilesArr, todasPredArr, resultadosData, equiposData] = await Promise.all([
       leerTodo('profiles', 'id,nombre,email'),
       leerTodo('predicciones', 'user_id,partido_id,resultado,definicion'),
       supabase
         .from('resultados')
         .select('partido_id,resultado,definicion,goles_local,goles_visitante'),
+      supabase
+        .from('equipos_partidos')
+        .select('partido_id,local,visitante,local_flag,visitante_flag'),
     ])
+
+    const eqMap = {}
+    ;(equiposData.data || []).forEach((e) => {
+      eqMap[e.partido_id] = e
+    })
+    setEquipos(eqMap)
 
     const resMap = {}
 
@@ -348,11 +358,13 @@ export default function OctavosPage() {
     )
   }
 
-  const jugados = OCTAVOS.filter((p) => getResultadoOficial(p, resultados[p.id])).length
-  const porJugar = OCTAVOS.length - jugados
+  const partidos = aplicarEquipos(OCTAVOS, equipos)
+
+  const jugados = partidos.filter((p) => getResultadoOficial(p, resultados[p.id])).length
+  const porJugar = partidos.length - jugados
 
   // Próximo partido: el primero (por fecha) que aún no se ha jugado
-  const proximo = [...OCTAVOS]
+  const proximo = [...partidos]
     .filter((p) => !getResultadoOficial(p, resultados[p.id]))
     .sort((a, b) => new Date(a.fecha) - new Date(b.fecha))[0]
 
@@ -519,14 +531,14 @@ export default function OctavosPage() {
       {/* BOTONES SECUNDARIOS */}
       <div className="grid grid-cols-2 gap-2.5">
         <button
-          onClick={() => navigate('/predicciones-16avos')}
+          onClick={() => navigate('/tabla-eliminatorias')}
           className="rounded-2xl px-4 py-4 text-center font-semibold text-white"
           style={{
             background: 'rgba(255,255,255,0.04)',
             border: '1px solid rgba(255,255,255,0.09)',
           }}
         >
-          👀 Destapadas
+          🏆 Tabla
         </button>
 
         <button
