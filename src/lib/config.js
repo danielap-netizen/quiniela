@@ -384,13 +384,131 @@ export const OCTAVOS_FINAL = [
   },
 ]
 
+// ============================================================
+// ELIMINATORIAS · CUARTOS DE FINAL
+// Todos por definir hasta que terminen los octavos.
+// ============================================================
+
+export const CUARTOS_FINAL = [
+  {
+    id: 'M97',
+    fase: 'cuartos',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-09T14:00:00-06:00',
+    ciudad: 'Boston Stadium',
+    localFlag: '⚽',
+    visitanteFlag: '⚽',
+    bloqueado: true,
+    notaResultado: 'Los equipos se definen con los resultados de octavos.',
+  },
+  {
+    id: 'M98',
+    fase: 'cuartos',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-10T13:00:00-06:00',
+    ciudad: 'Los Angeles Stadium',
+    localFlag: '⚽',
+    visitanteFlag: '⚽',
+    bloqueado: true,
+    notaResultado: 'Los equipos se definen con los resultados de octavos.',
+  },
+  {
+    id: 'M99',
+    fase: 'cuartos',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-11T15:00:00-06:00',
+    ciudad: 'Miami Stadium',
+    localFlag: '⚽',
+    visitanteFlag: '⚽',
+    bloqueado: true,
+    notaResultado: 'Los equipos se definen con los resultados de octavos.',
+  },
+  {
+    id: 'M100',
+    fase: 'cuartos',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-12T19:00:00-06:00',
+    ciudad: 'Kansas City Stadium',
+    localFlag: '⚽',
+    visitanteFlag: '⚽',
+    bloqueado: true,
+    notaResultado: 'Los equipos se definen con los resultados de octavos.',
+  },
+]
+
+// ============================================================
+// ELIMINATORIAS · SEMIFINALES
+// ============================================================
+
+export const SEMIS_FINAL = [
+  {
+    id: 'M101',
+    fase: 'semis',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-14T13:00:00-06:00',
+    ciudad: 'Dallas Stadium',
+    localFlag: '⚽',
+    visitanteFlag: '⚽',
+    bloqueado: true,
+    notaResultado: 'Los equipos se definen con los resultados de cuartos.',
+  },
+  {
+    id: 'M102',
+    fase: 'semis',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-15T13:00:00-06:00',
+    ciudad: 'Atlanta Stadium',
+    localFlag: '⚽',
+    visitanteFlag: '⚽',
+    bloqueado: true,
+    notaResultado: 'Los equipos se definen con los resultados de cuartos.',
+  },
+]
+
+// ============================================================
+// ELIMINATORIAS · TERCER PUESTO Y FINAL
+// ============================================================
+
+export const FINAL_FASE = [
+  {
+    id: 'M103',
+    fase: 'final',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-18T15:00:00-06:00',
+    ciudad: 'Miami Stadium',
+    localFlag: '🥉',
+    visitanteFlag: '🥉',
+    bloqueado: true,
+    notaResultado: 'Partido por el tercer puesto. Se define con las semifinales.',
+  },
+  {
+    id: 'M104',
+    fase: 'final',
+    local: 'Por definir',
+    visitante: 'Por definir',
+    fecha: '2026-07-19T13:00:00-06:00',
+    ciudad: 'New York / New Jersey Stadium',
+    localFlag: '🏆',
+    visitanteFlag: '🏆',
+    bloqueado: true,
+    notaResultado: 'La gran final. Se define con las semifinales.',
+  },
+]
+
 // Estos alias evitan romper los archivos que todavía usan el nombre OCTAVOS.
 // OCTAVOS ahora incluye TODAS las fases de eliminatorias jugadas hasta ahora,
 // para que los puntos se sumen automáticamente (16avos + octavos + ...).
 export const FECHA_CIERRE_OCTAVOS = FECHA_CIERRE_DIECISEISAVOS
-export const OCTAVOS = [...DIECISEISAVOS, ...OCTAVOS_FINAL]
+export const OCTAVOS = [...DIECISEISAVOS, ...OCTAVOS_FINAL, ...CUARTOS_FINAL, ...SEMIS_FINAL, ...FINAL_FASE]
 
-export const ELIMINATORIAS = [...DIECISEISAVOS, ...OCTAVOS_FINAL]
+export const ELIMINATORIAS = [...DIECISEISAVOS, ...OCTAVOS_FINAL, ...CUARTOS_FINAL, ...SEMIS_FINAL, ...FINAL_FASE]
 
 export const PUNTOS_POR_ACIERTO_ELIMINATORIAS = 1
 
