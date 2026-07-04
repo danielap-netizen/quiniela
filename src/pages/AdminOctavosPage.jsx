@@ -586,3 +586,76 @@ export default function AdminOctavosPage() {
       </div>
 
       {/* SECCIÓN: DEFINIR EQUIPOS */}
+      {porDefinir.length > 0 && (
+        <div className="mb-10">
+          <div className="flex items-center gap-3 mb-4">
+            <h2
+              className="text-2xl font-black text-white"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+            >
+              Definir equipos
+            </h2>
+            <div className="flex-1 h-px" style={{ background: 'rgba(244,167,185,0.2)' }} />
+          </div>
+
+          <div
+            className="rounded-2xl p-4 mb-4"
+            style={{
+              background: 'rgba(244,167,185,0.08)',
+              border: '1px solid rgba(244,167,185,0.16)',
+            }}
+          >
+            <p className="text-white/60 text-sm">
+              Estos partidos aún no tienen equipos. Al escribir los equipos y guardar, el partido se abre automáticamente para que todos puedan predecir.
+            </p>
+          </div>
+
+          {porDefinir.map((partido) => (
+            <DefinirEquiposCard
+              key={partido.id}
+              partido={partido}
+              equiposGuardados={equipos[partido.id]}
+              onSaveEquipos={handleSaveEquipos}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* SECCIÓN: RESULTADOS */}
+      <div className="flex items-center gap-3 mb-4">
+        <h2
+          className="text-2xl font-black text-white"
+          style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+        >
+          Resultados
+        </h2>
+        <div className="flex-1 h-px" style={{ background: 'rgba(244,167,185,0.2)' }} />
+      </div>
+
+      <div
+        className="rounded-2xl p-5 mb-6"
+        style={{
+          background: 'rgba(244,167,185,0.08)',
+          border: '1px solid rgba(244,167,185,0.16)',
+        }}
+      >
+        <p className="text-white font-bold">
+          Resultados cargados: {resultadosCargados}/{OCTAVOS.length}
+        </p>
+
+        <p className="text-white/45 text-sm mt-1">
+          Cada partido puede dar hasta 2 puntos: 1 por quién avanzó y 1 por cómo avanzó.
+        </p>
+      </div>
+
+      {OCTAVOS.map((partido) => (
+        <AdminPartidoCard
+          key={partido.id}
+          partido={partido}
+          resultadoGuardado={resultados[partido.id]}
+          onSave={handleSave}
+        />
+      ))}
+    </div>
+  )
+}
