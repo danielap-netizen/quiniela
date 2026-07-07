@@ -343,10 +343,8 @@ export const OCTAVOS_FINAL = [
     visitante: 'España',
     fecha: '2026-07-06T13:00:00-06:00',
     ciudad: 'Dallas Stadium',
-    localFlag: 'PT',
-    visitanteFlag: 'ES',
-    bloqueado: true,
-    notaResultado: 'Los equipos se definen con los resultados de 16avos.',
+    localFlag: '🇵🇹',
+    visitanteFlag: '🇪🇸',
   },
   {
     id: 'M94',
@@ -365,9 +363,8 @@ export const OCTAVOS_FINAL = [
     visitante: 'Egipto',
     fecha: '2026-07-07T10:00:00-06:00',
     ciudad: 'Atlanta Stadium',
-    localFlag: 'AR',
-    visitanteFlag: 'EG',
-    notaResultado: 'Los equipos se definen con los resultados de 16avos.',
+    localFlag: '🇦🇷',
+    visitanteFlag: '🇪🇬',
   },
   {
     id: 'M96',
@@ -376,10 +373,8 @@ export const OCTAVOS_FINAL = [
     visitante: 'Colombia',
     fecha: '2026-07-07T14:00:00-06:00',
     ciudad: 'Vancouver Stadium (BC Place)',
-    localFlag: 'CH',
-    visitanteFlag: 'CL',
-    bloqueado: true,
-    notaResultado: 'Los equipos se definen con los resultados de 16avos.',
+    localFlag: '🇨🇭',
+    visitanteFlag: '🇨🇴',
   },
 ]
 
