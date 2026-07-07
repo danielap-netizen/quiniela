@@ -367,7 +367,6 @@ export const OCTAVOS_FINAL = [
     ciudad: 'Atlanta Stadium',
     localFlag: 'AR',
     visitanteFlag: 'EG',
-    bloqueado: true,
     notaResultado: 'Los equipos se definen con los resultados de 16avos.',
   },
   {
